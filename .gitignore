@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment variables
+.env
+
+# Data files
+data/
+
+# Excel temp files
+~$*.xlsx
+~$*.xlsm
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+logs/
