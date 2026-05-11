@@ -1,0 +1,6 @@
+incoming_data:
+  - 'C:\Users\eddiec11us\dev_apps\customer-matching-app\data\raw\almo_04_2026.xlsx'
+
+
+
+# read the files, add normalized column, compare normalized against normalized in parent, it it is not in there, those need to be reviewed.
