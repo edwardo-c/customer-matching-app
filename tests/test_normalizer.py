@@ -1,8 +1,8 @@
 import pytest
-from src.customer_resolution.normalizer import normalize_str
+from src.customer_matching.normalizer import normalize_str
 
 def test_normalize_str():
-    text = " Ademco,  Inc.  CO"
-    expected = "ademco"
+    text = " Ademco hills,  Inc.  CO hills"
+    expected = "ademco hills"
     result = normalize_str(text)
     assert result == expected
