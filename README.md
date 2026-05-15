@@ -21,3 +21,11 @@ This system provides outputs for a human to confirm or deny potential matches to
 ERP accounts, Parent accounts, or both.
 
 
+[Unreleased]
+
+App authentication
+delete relationships
+back-ups
+vendor customer auto refresh
+acumatica auto refresh
+link user by password? if password == "aj's password" created by = AJ?

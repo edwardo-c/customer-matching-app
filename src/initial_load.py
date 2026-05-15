@@ -5,7 +5,6 @@ import os
 import pandas as pd
 from customer_matching.normalizer import normalize_col
 
-
 def refresh_app():
     if DB_PATH.exists(): os.remove(str(DB_PATH))
 

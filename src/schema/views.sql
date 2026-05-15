@@ -43,3 +43,6 @@ JOIN parent_accounts p ON
 JOIN erp_accounts erp ON
   b.erp_account_id = erp.erp_account_id
 );
+
+
+-- TODO: CREATE OR REPLACE VIEW all_relationships AS ();
