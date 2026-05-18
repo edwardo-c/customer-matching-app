@@ -1,4 +1,4 @@
---
+-- ENTITIES --
 CREATE SEQUENCE vendor_customer_id_seq START 1;
 CREATE TABLE vendor_customers (
     vendor_customer_id INTEGER PRIMARY KEY DEFAULT nextval('vendor_customer_id_seq'),
@@ -9,7 +9,7 @@ CREATE TABLE vendor_customers (
     billing_state VARCHAR,
     billing_city VARCHAR,
 );
---
+
 CREATE SEQUENCE erp_account_id_seq START 1;
 CREATE TABLE erp_accounts (
     erp_account_id INTEGER PRIMARY KEY DEFAULT nextval('erp_account_id_seq'),
@@ -20,7 +20,7 @@ CREATE TABLE erp_accounts (
     billing_state VARCHAR,
     billing_city VARCHAR
 );
--- 
+
 CREATE SEQUENCE parent_account_seq START 1;
 CREATE TABLE parent_accounts (
     parent_account_id INTEGER PRIMARY KEY DEFAULT nextval('parent_account_seq'),
@@ -43,4 +43,10 @@ CREATE TABLE vendor_customer_to_erp_account_map (
 CREATE TABLE erp_account_to_parent_account_map (
     erp_account_id INTEGER PRIMARY KEY REFERENCES erp_accounts(erp_account_id),
     parent_account_id INTEGER NOT NULL REFERENCES parent_accounts(parent_account_id)
-)
+);
+
+
+-- =================== CANDIDATES =========================
+-- CREATE TABLE candidates (
+
+-- )

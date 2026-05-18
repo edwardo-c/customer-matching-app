@@ -2,49 +2,28 @@ from pathlib import Path
 from ui.tabs import CheckboxControlledTabCfg
 from ui.sidebar import RelationshipFormCfg
 
-DB_PATH = Path(
-    r"C:\Users\eddiec11us\dev_apps\customer-matching-app\src\data\db.duckdb"
-)
+DB_PATH = Path(r"C:\Users\eddiec11us\dev_apps\customer-matching-app\src\data\db.duckdb")
+VIEWS_PATH = Path(r"C:\Users\eddiec11us\dev_apps\customer-matching-app\src\schema\views.sql")
+
 
 WORKFLOW_TAB_CFG = [
     CheckboxControlledTabCfg(
         checkbox_caption="Show Parent Accounts",
-        table_caption="Parent Accounts",
-        table_name="parent_accounts",
-        reader_key="table"
+        data_caption="Parent Accounts",
+        relation_name="parent_accounts",
+        relation_type="table"
     ),
     CheckboxControlledTabCfg(
         checkbox_caption="Show Vendor Customers",
-        table_caption="Vendor Customers",
-        table_name="vendor_customers",
-        reader_key="table"
+        data_caption="Vendor Customers",
+        relation_name="workflow_vendor_customers_mapping_vw",
+        relation_type="view"
     ),
     CheckboxControlledTabCfg(
         checkbox_caption="Show ERP Accounts",
-        table_caption="ERP Accounts",
-        table_name="erp_accounts",
-        reader_key="table"
-    )
-]
-
-RELATIONSHIP_TAB_CFG = [
-    CheckboxControlledTabCfg(
-        checkbox_caption="Show Vendor Cust -> ERP",
-        table_caption="Vendor Customers to ERP Accounts",
-        table_name="vendor_customter_to_erp_account_vw",
-        reader_key="view"
-    ),
-    CheckboxControlledTabCfg(
-        checkbox_caption="Show Vendor Cust -> Parents",
-        table_caption="Vendor Customer to Parent Accounts",
-        table_name="vendor_customer_to_parent_account_vw",
-        reader_key="view"
-    ),
-    CheckboxControlledTabCfg(
-        checkbox_caption="Show ERP Cust -> Parents",
-        table_caption="ERP Accounts to Parent Accounts",
-        table_name="erp_account_to_parent_account_vw",
-        reader_key="view"
+        data_caption="ERP Accounts",
+        relation_name="workflow_erp_accounts_vw",
+        relation_type="view"
     )
 ]
 

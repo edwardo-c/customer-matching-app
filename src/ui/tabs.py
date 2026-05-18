@@ -2,6 +2,7 @@ import streamlit as st
 import duckdb
 from dataclasses import dataclass
 import pandas as pd
+from typing import Callable
 
 def get_data(conn: duckdb.DuckDBPyConnection, relation: str):
     return conn.table(relation).df()
@@ -14,9 +15,15 @@ READER_FUNC_REGISTRY = {'table': get_data, 'view': get_vw}
 @dataclass
 class CheckboxControlledTabCfg:
     checkbox_caption: str
-    table_caption: str
-    table_name: str
-    reader_key: str
+    data_caption: str
+    relation_name: str
+    relation_type: str
+    reader_func: None | Callable = None
+
+    def __post_init__(self):
+        if self.relation_type not in (READER_FUNC_REGISTRY.keys()):
+            raise KeyError(f"relation type must equal 'table' or 'view'")
+        self.reader_func = READER_FUNC_REGISTRY[self.relation_type]
 
 def render_checkbox_controlled_dataframes(
         cfg: list[CheckboxControlledTabCfg], 
@@ -27,11 +34,11 @@ def render_checkbox_controlled_dataframes(
         with col:
             result = st.checkbox(table_option.checkbox_caption)
         if result:
-            st.caption(table_option.table_caption)
+            st.caption(table_option.data_caption)
             st.dataframe(
-                READER_FUNC_REGISTRY[table_option.reader_key](
+                table_option.reader_func(
                     conn, 
-                    table_option.table_name
+                    table_option.relation_name
                 ), 
                 hide_index=True, 
                 width="stretch"

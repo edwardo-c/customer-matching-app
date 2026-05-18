@@ -3,7 +3,6 @@ import duckdb
 
 from config import (
     DB_PATH, 
-    RELATIONSHIP_TAB_CFG, 
     WORKFLOW_TAB_CFG, 
     SIDEBAR_RELATIONSHIP_CFG
 )
@@ -12,10 +11,12 @@ from ui.tabs import render_checkbox_controlled_dataframes
 
 conn = duckdb.connect(DB_PATH)
 
+st.set_page_config(layout="wide")
+
 st.title("POS Cross Reference")
 
 # ===== Tabs ======
-overview, workflow, relationships = st.tabs(["Overview", "Workflow", "Relationships"])
+overview, workflow, candidates = st.tabs(["Overview", "Workflow", "Candidates"])
 
 with overview:
     st.write("Count of unmatched Vendor Customers")
@@ -26,9 +27,6 @@ with overview:
 
 with workflow:
     render_checkbox_controlled_dataframes(WORKFLOW_TAB_CFG, conn)
-
-with relationships:
-    render_checkbox_controlled_dataframes(RELATIONSHIP_TAB_CFG, conn)
 
 # ==== Sidebar =====
 with st.sidebar:
