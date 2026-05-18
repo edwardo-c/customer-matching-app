@@ -31,31 +31,31 @@ RELATIONSHIP_TAB_CFG = [
     CheckboxControlledTabCfg(
         checkbox_caption="Show Vendor Cust -> ERP",
         table_caption="Vendor Customers to ERP Accounts",
-        table_name="vendor_cust_to_erp_cust_vw",
+        table_name="vendor_customter_to_erp_account_vw",
         reader_key="view"
     ),
     CheckboxControlledTabCfg(
         checkbox_caption="Show Vendor Cust -> Parents",
         table_caption="Vendor Customer to Parent Accounts",
-        table_name="vendor_cust_to_parent_vw",
+        table_name="vendor_customer_to_parent_account_vw",
         reader_key="view"
     ),
     CheckboxControlledTabCfg(
         checkbox_caption="Show ERP Cust -> Parents",
         table_caption="ERP Accounts to Parent Accounts",
-        table_name="erp_cust_to_parent_vw",
+        table_name="erp_account_to_parent_account_vw",
         reader_key="view"
     )
 ]
 
 SIDEBAR_RELATIONSHIP_CFG = {
     "Vendor Customer ➡️ Parent Account": RelationshipFormCfg(
-            option_display_name="Vendor Customer to Parent Account Relationship",
-            target_table="vendor_customer_to_parent_account_map",
-            parent_display_name="Parent Account ID",
-            parent_api_name="parent_account_id",
-            child_display_name="Vendor Customer ID",
-            child_api_name="vendor_customer_id"
+        option_display_name="Vendor Customer to Parent Account Relationship",
+        target_table="vendor_customer_to_parent_account_map",
+        parent_display_name="Parent Account ID",
+        parent_api_name="parent_account_id",
+        child_display_name="Vendor Customer ID",
+        child_api_name="vendor_customer_id"
     ),
     "ERP Account ➡️ Parent Account": RelationshipFormCfg(
         option_display_name="ERP Account To Parent Account Relationship",
@@ -67,7 +67,7 @@ SIDEBAR_RELATIONSHIP_CFG = {
     ),
     "Vendor Customer ➡️ ERP Account": RelationshipFormCfg(
         option_display_name="Vendor Customer To ERP Account Relationship",
-        target_table="vendor_cust_to_erp_account_map",
+        target_table="vendor_customer_to_erp_account_map",
         parent_display_name="ERP Account ID",
         parent_api_name="erp_account_id",
         child_display_name="Vendor Customer ID",

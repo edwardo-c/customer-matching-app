@@ -1,21 +1,20 @@
 -- every vendor customer mapped to an erp customer
-CREATE OR REPLACE VIEW vendor_cust_to_erp_cust_vw AS (
+CREATE OR REPLACE VIEW vendor_customer_to_erp_account_vw AS (
 SELECT 
   erp.erp_account_number,
   erp.erp_account_name,
   vc.vendor_name,
   vc.raw_vendor_customer_name,
   vc.normalized_customer_name
-FROM vendor_customer_to_erp_acct_map b
+FROM vendor_customer_to_erp_account_map b
 JOIN erp_accounts erp ON
   b.erp_account_id = erp.erp_account_id
 JOIN vendor_customers vc ON
   b.erp_account_id = vc.vendor_customer_id
 );
 
-
 -- every vendor customer mapped to a parent
-CREATE OR REPLACE VIEW vendor_cust_to_parent_vw AS (
+CREATE OR REPLACE VIEW vendor_customer_to_parent_account_vw AS (
 SELECT 
   p.parent_account_name,
   p.normalized_parent_name,
@@ -29,9 +28,8 @@ JOIN vendor_customers vc ON
   b.vendor_customer_id = vc.vendor_customer_id
 );
 
-
 -- TODO: every erp customer mapped to a parent
-CREATE OR REPLACE VIEW erp_cust_to_parent_vw AS (
+CREATE OR REPLACE VIEW erp_account_to_parent_account_vw AS (
 SELECT 
   p.parent_account_name,
   p.normalized_parent_name,
@@ -43,6 +41,3 @@ JOIN parent_accounts p ON
 JOIN erp_accounts erp ON
   b.erp_account_id = erp.erp_account_id
 );
-
-
--- TODO: CREATE OR REPLACE VIEW all_relationships AS ();

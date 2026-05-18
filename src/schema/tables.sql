@@ -10,9 +10,9 @@ CREATE TABLE vendor_customers (
     billing_city VARCHAR,
 );
 --
-CREATE SEQUENCE erp_acct_id_seq START 1;
+CREATE SEQUENCE erp_account_id_seq START 1;
 CREATE TABLE erp_accounts (
-    erp_account_id INTEGER PRIMARY KEY DEFAULT nextval('erp_acct_id_seq'),
+    erp_account_id INTEGER PRIMARY KEY DEFAULT nextval('erp_account_id_seq'),
     erp_account_number VARCHAR UNIQUE NOT NULL,
     erp_account_name VARCHAR NOT NULL,
     normalized_erp_account_name VARCHAR NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE vendor_customer_to_parent_account_map (
     parent_account_id INTEGER REFERENCES parent_accounts(parent_account_id)
 );
 
-CREATE TABLE vendor_customer_to_erp_acct_map (
+CREATE TABLE vendor_customer_to_erp_account_map (
     vendor_customer_id INTEGER PRIMARY KEY REFERENCES vendor_customers(vendor_customer_id),
     erp_account_id INTEGER NOT NULL REFERENCES erp_accounts(erp_account_id)
 );

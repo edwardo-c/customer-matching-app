@@ -25,7 +25,6 @@ def render_add_parent_form(conn):
             st.rerun()
 
 
-
 # ========= ADD RELATIONSHIP ==============
 
 @dataclass
@@ -50,7 +49,7 @@ def parse_relationship_results(
         {relationship_cfg.target_table} 
         ({relationship_cfg.parent_api_name}, {relationship_cfg.child_api_name}) 
         VALUES (?, ?)
-        """, 
+        """,  
         [parent_id, child_id]
     )
 
@@ -72,7 +71,7 @@ def render_relationship_forms(
         submitted = st.form_submit_button()
         if submitted:
             parse_relationship_results(
-                selection_cfg.target_table, 
+                selection_cfg, 
                 parent_id=parent_id, 
                 child_id=child_id, 
                 conn=conn
