@@ -27,7 +27,6 @@ CREATE TABLE parent_accounts (
     parent_account_name VARCHAR UNIQUE NOT NULL,
     normalized_parent_name VARCHAR UNIQUE NOT NULL
 );
---
 
 -- ==================== RELATIONSHIPS ====================
 CREATE TABLE vendor_customer_to_parent_account_map (
@@ -47,6 +46,6 @@ CREATE TABLE erp_account_to_parent_account_map (
 
 
 -- =================== CANDIDATES =========================
--- CREATE TABLE candidates (
-
--- )
+CREATE TABLE candidates (
+    
+)

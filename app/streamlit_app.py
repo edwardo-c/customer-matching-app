@@ -2,14 +2,22 @@ import streamlit as st
 import duckdb
 
 from config import (
-    DB_PATH, 
+    APP_PATHS, 
     WORKFLOW_TAB_CFG, 
-    SIDEBAR_RELATIONSHIP_CFG
+    SIDEBAR_RELATIONSHIP_CFG,
+    CANDIDATES_CFG
 )
 from ui.sidebar import render_add_parent_form, render_relationship_forms
 from ui.tabs import render_checkbox_controlled_dataframes
+from loaders import load_app
 
-conn = duckdb.connect(DB_PATH)
+
+
+if (('loaded' not in st.session_state) or (not st.session_state['loaded'])):
+    ctx = load_app(APP_PATHS)
+    st.session_state['loaded'] = True
+
+
 
 st.set_page_config(layout="wide")
 
@@ -26,7 +34,11 @@ with overview:
     col3.metric("Latency", "42ms", "-3%")
 
 with workflow:
-    render_checkbox_controlled_dataframes(WORKFLOW_TAB_CFG, conn)
+    render_checkbox_controlled_dataframes(WORKFLOW_TAB_CFG, ctx.db_conn)
+
+with candidates:
+
+    st.write("candidates workflow")
 
 # ==== Sidebar =====
 with st.sidebar:

@@ -4,7 +4,7 @@ from pathlib import Path
 import os
 import pandas as pd
 from customer_matching.normalizer import normalize_col
-from src.refresh_views import refresh_views
+from load.views import refresh_views
 
 from config import DB_PATH
 

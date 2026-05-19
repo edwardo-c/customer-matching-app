@@ -6,7 +6,6 @@ SUFFIXES = ['inc', 'llc', 'ltd', 'co']
 PATTERN = "|".join(f"\\b" + s + f"\\b" for s in SUFFIXES)
 
 def replace_ampersand(text: str) -> str:
-    
     text = text.replace("&", "and")
     return text
 
@@ -17,7 +16,7 @@ def remove_suffixes(text: str):
     return re.sub(PATTERN, "", text)
 
 def remove_multiple_spaces(text: str):
-    return re.sub(r'  +', "", text)
+    return re.sub(r'  +', " ", text)
 
 def normalize_str(text: str):
     text = text.lower()
@@ -28,6 +27,13 @@ def normalize_str(text: str):
     text = text.strip()
     return text
 
-def normalize_col(df: pd.DataFrame, col_in_name: str, col_out_name: str) -> pd.DataFrame:
+def normalize_col(*, df: pd.DataFrame, col_in_name: str, col_out_name: str) -> pd.DataFrame:
+    """
+    
+    normalize specified column 
+    
+    return DataFrame with col_out_name added holding normalized values
+    
+    """
     df[col_out_name] = df[col_in_name].astype(str).apply(normalize_str)
     return df

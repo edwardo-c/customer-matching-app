@@ -43,3 +43,6 @@ def render_checkbox_controlled_dataframes(
                 hide_index=True, 
                 width="stretch"
             )
+
+def render_candidates():
+    ...
