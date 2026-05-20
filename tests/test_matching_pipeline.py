@@ -1,6 +1,6 @@
 import pandas as pd
-from customer_matching.matcher import MatchingPipeline
-from customer_matching.normalizer import normalize_col
+from data_commands.matcher import MatchingPipeline
+from data_commands.normalizer import normalize_col
 
 # mock of vendor_customers
 _LEFT = pd.DataFrame(
@@ -43,9 +43,18 @@ def test_matching_pipeline():
         left_column_name="normalized_name",
         right_df=RIGHT,
         right_column_name="normalized_name",
-        column_subset={'state': 'state', 'zip': 'zip'}
+        column_subset={'state': 'state', 'zip': 'zip'},
+        match_type="vc_to_erp"
     )
 
     matcher.run()
     
     breakpoint()
+
+"""
+you need to be able to pass in multiple column_subsets
+each being less strict than the previous one
+
+also add a column to show how many filters applied, just for tracking
+maybe less important?
+"""

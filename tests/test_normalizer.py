@@ -1,5 +1,5 @@
 import pytest
-from src.customer_matching.normalizer import normalize_str
+from src.data_commands.normalizer import normalize_str
 
 def test_normalize_str():
     text = " Ademco - hills,  Inc.  CO"

@@ -1,5 +1,5 @@
 import duckdb
-from customer_matching.normalizer import normalize_str
+from data_commands.normalizer import normalize_str
 import streamlit as st
 from dataclasses import dataclass
 import duckdb

@@ -3,28 +3,37 @@ import duckdb
 from pathlib import Path
 import os
 import pandas as pd
-from customer_matching.normalizer import normalize_col
-from load.views import refresh_views
+from data_commands.normalizer import normalize_col
+from config import APP_PATHS
 
-from config import DB_PATH
+if APP_PATHS.db_path.exists(): os.remove(str(APP_PATHS.db_path))
 
-
-if DB_PATH.exists(): os.remove(str(DB_PATH))
-
-conn = duckdb.connect(DB_PATH)
+conn = duckdb.connect(APP_PATHS.db_path)
 
 # INITIALIZE SCHEMA
 conn.execute(Path(r"C:\Users\eddiec11us\dev_apps\customer-matching-app\src\schema\tables.sql").read_text(encoding="utf-8"))
-refresh_views()
+conn.execute(Path(r"C:\Users\eddiec11us\dev_apps\customer-matching-app\src\schema\views.sql").read_text(encoding="utf-8"))
 
 # NORMALIZE VENDOR_CUSTOMER NAMES
 vendor_cust_df = pd.read_excel(r"C:\Users\eddiec11us\dev_apps\customer-matching-app\src\data\raw\almo_04_2026.xlsx")
-vendor_cust_normalized_df = normalize_col(vendor_cust_df, "raw_vendor_customer_name", "normalized_customer_name")
+
+vendor_cust_normalized_df = normalize_col(
+    df=vendor_cust_df, 
+    col_in_name="raw_vendor_customer_name", 
+    col_out_name="normalized_vendor_customer_name"
+)
+
 conn.execute("INSERT INTO vendor_customers BY NAME SELECT * FROM vendor_cust_normalized_df")
 
 # NORMALIZE ERP CUSTOMER NAMES
 erp_cust_df = pd.read_excel(r"C:\Users\eddiec11us\dev_apps\customer-matching-app\src\data\raw\erp_05_2026.xlsx")
-erp_cust_normalized_df = normalize_col(erp_cust_df, "erp_account_name", "normalized_erp_account_name")
+
+erp_cust_normalized_df = normalize_col(
+    df=erp_cust_df, 
+    col_in_name="erp_account_name", 
+    col_out_name="normalized_erp_account_name"
+)
+
 conn.execute("INSERT INTO erp_accounts BY NAME SELECT * FROM erp_cust_normalized_df")
 
 

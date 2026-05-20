@@ -1,36 +1,35 @@
 from pathlib import Path
 from ui.tabs import CheckboxControlledTabCfg
 from ui.sidebar import RelationshipFormCfg
-from loaders import MatchCfg
+from data_commands.matcher_cfg import MatcherCfg
 from enum import Enum
-from load_helpers import AppPaths
-
+from data_commands.context import AppPaths
 
 APP_PATHS = AppPaths(
     db_path = Path(r"C:\Users\eddiec11us\dev_apps\customer-matching-app\src\data\db.duckdb"),
     views_path = Path(r"C:\Users\eddiec11us\dev_apps\customer-matching-app\src\schema\views.sql"),
-    vendor_customers = Path(r"\\peernet\DavWWWRoot\Reporting\POS DATA\2025 - 2026 POS Pivot Incentive Comp.xlsx")
+    vendor_customers_path = Path(r"\\peernet\DavWWWRoot\Reporting\POS DATA\2025 - 2026 POS Pivot Incentive Comp.xlsx")
 )
-
-
-
 
 class TableNames(Enum):
     parents = "parent_accounts"
     vendor_customers = "vendor_customers"
     erp_accounts = "erp_accounts"
 
-CANDIDATES_CFG = [
+MATCH_CFG = [
     # compare vendor to erp customers
-    MatchCfg(
-        left_table_name=TableNames.vendor_customers.value,
-        left_column_name="normalized_customer_name",
-        right_table_name=TableNames.erp_accounts.value,
+    MatcherCfg(
+        left_relation_name=TableNames.vendor_customers.name,
+        left_column_name="normalized_vendor_customer_name",
+        right_relation_name=TableNames.erp_accounts.name,
         right_column_name="normalized_erp_account_name",
-        column_subset=["billing_state", "billing_zip"]
-    )
+        column_subset={
+            "vendor_customer_billing_state":"erp_account_billing_state",
+            "vendor_customer_billing_zip": "erp_account_billing_zip"
+        },
+        score_cutoff=80
+    ),
 ]
-
 
 WORKFLOW_TAB_CFG = [
     CheckboxControlledTabCfg(
