@@ -9,7 +9,6 @@ class CheckboxControlledTabCfg:
     checkbox_caption: str
     data_caption: str
     relation_name: str
-    relation_type: str
 
 def render_checkbox_controlled_dataframes(
         cfg: list[CheckboxControlledTabCfg], 

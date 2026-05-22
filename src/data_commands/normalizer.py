@@ -2,8 +2,12 @@ import pandas as pd
 import string
 import re
 
-SUFFIXES = ['inc', 'llc', 'ltd', 'co']
-PATTERN = "|".join(f"\\b" + s + f"\\b" for s in SUFFIXES)
+STOP_WORDS = [
+    'the', 'a', 'an', 
+    'inc', 'llc', 'corp', 'company', 'co', 'ltd', 'holdings', 'group'
+]
+
+PATTERN = "|".join(f"\\b" + s + f"\\b" for s in STOP_WORDS)
 
 def replace_ampersand(text: str) -> str:
     text = text.replace("&", "and")
@@ -27,13 +31,26 @@ def normalize_str(text: str):
     text = text.strip()
     return text
 
-def normalize_col(*, df: pd.DataFrame, col_in_name: str, col_out_name: str) -> pd.DataFrame:
+def normalize_col(
+        *, 
+        df: pd.DataFrame, 
+        col_in_name: str, 
+        col_out_name: str
+    ) -> pd.DataFrame:
     """
-    
     normalize specified column 
-    
     return DataFrame with col_out_name added holding normalized values
-    
     """
     df[col_out_name] = df[col_in_name].astype(str).apply(normalize_str)
     return df
+
+def add_first3_token(
+        *,
+        df: pd.DataFrame, 
+        col_in_name: str, 
+        col_out_name: str
+    ):
+    
+    df[col_out_name] = df[col_in_name].apply(lambda x: x[0:3])
+    return df
+

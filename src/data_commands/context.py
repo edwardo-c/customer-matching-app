@@ -5,7 +5,6 @@ from pathlib import Path
 @dataclass
 class AppPaths:
     db_path: Path
-    views_path: Path
     vendor_customers_path: Path
 
 def get_app_context(app_paths: AppPaths):
