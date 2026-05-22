@@ -41,6 +41,10 @@ def load_candidates_table(
             SELECT * FROM new_candidates_df
             """
         )
-        
+
+def load_suggested_parent_table():
+    ...
+
+
 def refresh_app(ctx: AppContext, cfg: AppRefreshCfg):
     load_candidates_table(ctx, cfg.vendor_to_erp_candidates_cfg)

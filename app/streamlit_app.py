@@ -7,10 +7,10 @@ from config import (
     SIDEBAR_RELATIONSHIP_CFG
 )
 from ui.sidebar import render_add_parent_form, render_relationship_forms
-from ui.tabs import render_checkbox_controlled_dataframes
+from ui.tabs import render_checkbox_controlled_dataframes, view_candidate_detail
 from data_commands.context import get_app_context
 
-from data_commands.refresh import refresh_app
+from data_commands.load import refresh_app
 
 ctx = get_app_context(APP_PATHS)
 
@@ -24,7 +24,8 @@ candidates, history = st.tabs(["Candidates", "History"])
 #     render_checkbox_controlled_dataframes(WORKFLOW_TAB_CFG, ctx.db_conn)
 
 with candidates:
-    render_checkbox_controlled_dataframes(CANDIDATES_TAB_CFG, ctx.db_conn)
+    view_candidate_detail(ctx.db_conn)
+    # render_checkbox_controlled_dataframes(CANDIDATES_TAB_CFG, ctx.db_conn)
 
 with history:
     st.dataframe(ctx.db_conn.sql("SELECT * FROM batches").df())

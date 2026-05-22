@@ -1,7 +1,7 @@
 from pathlib import Path
 from ui.tabs import CheckboxControlledTabCfg
 from ui.sidebar import RelationshipFormCfg
-from data_commands.refresh import AppRefreshCfg
+from data_commands.load import AppRefreshCfg
 
 from enum import Enum
 from data_commands.context import AppPaths
@@ -24,6 +24,11 @@ CANDIDATES_TAB_CFG = [
         data_caption="Vendor Customer to ERP Account Candidates",
         relation_name="vendor_customer_to_erp_account_candidate_vw"
     ),
+    CheckboxControlledTabCfg(
+        checkbox_caption="Suggested Vendor Customer Parents",
+        data_caption="Multiple Vendor customers exist with this criteria",
+        relation_name="suggested_vendor_customer_parents_vw"
+    )
 ]
 
 class TableNames(Enum):
@@ -79,26 +84,6 @@ SIDEBAR_RELATIONSHIP_CFG = {
         child_api_name="vendor_customer_id"
     )
 }
-
-
-# WORKFLOW_TAB_CFG = [
-#     CheckboxControlledTabCfg(
-#         checkbox_caption="Show Parent Accounts",
-#         data_caption="Parent Accounts",
-#         relation_name=TableNames.parents.value,
-#     ),
-#     CheckboxControlledTabCfg(
-#         checkbox_caption="Show Vendor Customers",
-#         data_caption="Vendor Customers",
-#         relation_name="workflow_vendor_customers_mapping_vw",
-#     ),
-#     CheckboxControlledTabCfg(
-#         checkbox_caption="Show ERP Accounts",
-#         data_caption="ERP Accounts",
-#         relation_name="workflow_erp_accounts_vw",
-#     )
-# ]
-
 
 
 
