@@ -1,28 +1,7 @@
 import duckdb
-from data_commands.normalizer import normalize_str
 import streamlit as st
 from dataclasses import dataclass
 import duckdb
-
-
-# ========= ADD PARENTS ==============
-
-def add_parent(conn: duckdb.DuckDBPyConnection, name: str):
-    norm_name = normalize_str(name)
-    conn.execute(
-        "INSERT INTO parent_accounts (parent_account_name, normalized_parent_name) VALUES (?, ?)", 
-        [name, norm_name]
-    )
-
-def render_add_parent_form(conn):
-    with st.form("add_parent_form"):
-        st.write("Add Parent Account")
-        parent_name = st.text_input("Parent Account Name")
-        submitted = st.form_submit_button("Add Parent")
-        if submitted:
-            add_parent(conn, parent_name)
-            st.success(f"{parent_name} added")
-            st.rerun()
 
 
 # ========= ADD RELATIONSHIP ==============

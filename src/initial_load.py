@@ -26,7 +26,7 @@ vendor_cust_normalized_df = normalize_col(
 vendor_cust_normalized_df = add_first3_token(
     df=vendor_cust_normalized_df,
     col_in_name="normalized_vendor_customer_name",
-    col_out_name="vendor_customer_first3_token"
+    col_out_name="first3_token"
 )
 
 conn.execute("INSERT INTO vendor_customers BY NAME SELECT * FROM vendor_cust_normalized_df")
@@ -43,7 +43,7 @@ erp_cust_normalized_df = normalize_col(
 erp_cust_normalized_df = add_first3_token(
     df=erp_cust_normalized_df, 
     col_in_name="normalized_erp_account_name", 
-    col_out_name="erp_name_first3_token"
+    col_out_name="first3_token"
 )
 
 conn.execute("INSERT INTO erp_accounts BY NAME SELECT * FROM erp_cust_normalized_df")

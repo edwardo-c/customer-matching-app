@@ -1,38 +1,128 @@
-CREATE OR REPLACE VIEW vendor_customer_to_erp_account_candidate_vw AS (
+CREATE OR REPLACE VIEW vendor_to_parent_candidates AS (
+SELECT
+  vc.vendor_customer_id,
+  vc.vendor_name,
+  vc.raw_vendor_customer_name,
+  vc.normalized_vendor_customer_name,
+  vc.billing_zip,
+  vc.billing_state,
+  vc.billing_city,
+  vc.first3_token AS vendor_first3_token,
+
+  p.parent_account_id,
+  p.parent_account_name,
+  p.normalized_parent_name,
+  p.first3_token AS parent_first3_token
+FROM vendor_customers vc
+INNER JOIN parent_accounts p ON
+  vc.first3_token = p.first3_token
+WHERE 
+  NOT EXISTS (
+    SELECT 1
+    FROM vendor_customer_to_parent_account_map v2p
+    WHERE vc.vendor_customer_id = v2p.vendor_customer_id
+  )
+  AND NOT EXISTS (
+    SELECT 1
+    FROM mismatch_vendor_customer_to_parent_account_map rejected
+    WHERE vc.vendor_customer_id = rejected.vendor_customer_id
+    AND p.parent_account_id = rejected.parent_account_id
+  )
+);
+
+CREATE OR REPLACE VIEW vendor_to_erp_candidates AS (
+WITH token_state_zip AS (
+SELECT
+  vc.vendor_customer_id,
+  e.erp_account_id,
+  'token_state_zip' AS match_type
+FROM vendor_customers vc
+INNER JOIN erp_accounts e ON
+  vc.first3_token = e.first3_token
+  AND vc.billing_state = e.billing_state
+  AND vc.billing_zip = e.billing_zip
+WHERE 
+  NOT EXISTS (
+    SELECT 1 
+    FROM vendor_customer_to_erp_account_map accepted
+    WHERE vc.vendor_customer_id = accepted.vendor_customer_id
+  )
+  AND NOT EXISTS (
+    SELECT 1
+    FROM mismatch_vendor_customer_to_erp_account_map rejected
+    WHERE vc.vendor_customer_id = rejected.vendor_customer_id
+    AND e.erp_account_id = rejected.erp_account_id
+  )
+), token_state AS (
+SELECT
+  vc.vendor_customer_id,
+  e.erp_account_id,
+  'token_state' AS match_type
+FROM vendor_customers vc
+JOIN erp_accounts e ON
+  vc.first3_token = e.first3_token
+  AND vc.billing_state = e.billing_state
+WHERE
+  NOT EXISTS (
+    SELECT 1
+    FROM vendor_customer_to_erp_account_map accepted
+    WHERE vc.vendor_customer_id = accepted.vendor_customer_id
+  )
+  AND NOT EXISTS (
+    SELECT 1 
+    FROM mismatch_vendor_customer_to_erp_account_map rejected
+    WHERE vc.vendor_customer_id = rejected.vendor_customer_id
+    AND e.erp_account_id = rejected.erp_account_id
+  )
+), token AS (
+SELECT
+  vc.vendor_customer_id,
+  e.erp_account_id,
+  'token' AS match_type
+FROM vendor_customers vc
+JOIN erp_accounts e ON
+  vc.first3_token = e.first3_token
+WHERE
+  NOT EXISTS (
+    SELECT 1
+    FROM vendor_customer_to_erp_account_map accepted
+    WHERE vc.vendor_customer_id = accepted.vendor_customer_id
+  )
+  AND NOT EXISTS (
+    SELECT 1 
+    FROM mismatch_vendor_customer_to_erp_account_map rejected
+    WHERE vc.vendor_customer_id = rejected.vendor_customer_id
+    AND e.erp_account_id = rejected.erp_account_id
+  )
+), unioned AS (
+SELECT * FROM token_state_zip
+UNION ALL
+SELECT * FROM token_state
+UNION ALL 
+SELECT * FROM token
+) 
 SELECT
   base.vendor_customer_id,
   base.erp_account_id,
-  base.score,
-  base.status
-FROM vendor_customer_to_erp_account_candidate_map base
+  base.match_type,
+
+  vc.vendor_name,
+  vc.raw_vendor_customer_name,
+  vc.normalized_vendor_customer_name,
+  vc.billing_zip AS vendor_customer_billing_zip,
+  vc.billing_state AS vendor_customer_billing_state,
+  vc.first3_token AS vendor_customer_first3_token,
+
+  e.erp_account_number,
+  e.erp_account_name,
+  e.normalized_erp_account_name,
+  e.billing_zip AS erp_billing_zip,
+  e.billing_state AS erp_billing_state,
+  e.first3_token AS erp_first3_token
+
+FROM unioned base
+JOIN vendor_customers vc ON
+  base.vendor_customer_id = vc.vendor_customer_id
+JOIN erp_accounts e ON 
+  base.erp_account_id = e.erp_account_id
 );
-
-CREATE OR REPLACE VIEW suggested_vendor_customer_parents_vw AS (
-WITH base AS (SELECT DISTINCT
-  vendor_customer_first3_token AS first3_token,
-  vendor_customer_billing_state AS state,
-  vendor_customer_billing_zip AS zip,
-  COUNT(vendor_customer_id) AS count_of_potential_siblings
-FROM vendor_customers
-GROUP BY ALL
-HAVING COUNT(vendor_customer_id) > 1
-), potential_parents AS (
-SELECT 
-  COUNT(parent_account_id) AS count_of_parents_with_same_token,
-  parent_name_first3_token AS first3_token
-FROM parent_accounts
-GROUP BY ALL
-) 
-SELECT
-  b.first3_token,
-  b.state,
-  b.zip,
-  b.count_of_potential_siblings,
-  COALESCE(p.count_of_parents_with_same_token, 0) AS count_of_parents_with_same_token
-FROM base b
-LEFT JOIN potential_parents p ON
-  b.first3_token = p.first3_token
-);
-
-
-
