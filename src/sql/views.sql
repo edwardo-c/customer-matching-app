@@ -28,6 +28,9 @@ WHERE
     WHERE vc.vendor_customer_id = rejected.vendor_customer_id
     AND p.parent_account_id = rejected.parent_account_id
   )
+ORDER BY
+  vc.vendor_customer_id,
+  p.parent_account_id
 );
 
 CREATE OR REPLACE VIEW vendor_to_erp_candidates AS (
@@ -125,4 +128,8 @@ JOIN vendor_customers vc ON
   base.vendor_customer_id = vc.vendor_customer_id
 JOIN erp_accounts e ON 
   base.erp_account_id = e.erp_account_id
+ORDER BY 
+  base.match_type DESC,
+  base.vendor_customer_id,
+  base.erp_account_id
 );
