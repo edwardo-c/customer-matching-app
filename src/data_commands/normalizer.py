@@ -3,7 +3,7 @@ import string
 import re
 
 STOP_WORDS = [
-    'the', 'a', 'an', 
+    'the', 'a', 'an', "dll"
     'inc', 'llc', 'corp', 'company', 'co', 'ltd', 'holdings', 'group'
 ]
 

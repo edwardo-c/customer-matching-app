@@ -133,3 +133,62 @@ ORDER BY
   base.vendor_customer_id,
   base.erp_account_id
 );
+
+CREATE OR REPLACE VIEW potential_vendor_siblings AS (
+WITH base AS (
+SELECT
+  vc.vendor_customer_id,
+  vc.vendor_name,
+  vc.normalized_vendor_customer_name,
+  vc.first3_token,
+  vc.billing_state,
+  vc.billing_zip,
+  p.parent_account_name
+FROM vendor_customers vc
+
+LEFT JOIN vendor_customer_to_parent_account_map pid ON 
+  vc.vendor_customer_id = pid.vendor_customer_id
+LEFT JOIN parent_accounts p ON
+  pid.parent_account_id = p.parent_account_id
+
+WHERE 
+  vc.first3_token IS NOT NULL
+  AND vc.billing_state IS NOT NULL
+  AND vc.billing_zip IS NOT NULL
+), 
+
+counted AS (
+SELECT 
+  *,
+  COUNT(*) OVER (
+    PARTITION BY base.first3_token, base.billing_state, base.billing_zip
+  ) AS sibling_count
+FROM base
+), 
+
+filtered as (
+  SELECT * FROM counted
+WHERE sibling_count > 1
+
+), 
+
+ranked AS (
+SELECT 
+  *,
+  DENSE_RANK() OVER (
+  PARTITION BY filtered.first3_token, filtered.billing_state, filtered.billing_zip
+  ) AS sibling_group
+FROM filtered
+
+)
+SELECT 
+  sibling_group,
+  vendor_customer_id,
+  parent_account_name,
+  vendor_name,
+  normalized_vendor_customer_name,
+  first3_token,
+  billing_state,
+  billing_zip
+FROM ranked
+);

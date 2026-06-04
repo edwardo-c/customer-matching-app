@@ -86,4 +86,12 @@ CREATE TABLE mismatch_vendor_customer_to_erp_account_map (
     PRIMARY KEY (vendor_customer_id, erp_account_id)
 );
 
+CREATE SEQUENCE vendor_sibling_mismatch_seq START 1;
+CREATE TABLE vendor_customer_sibling_mismatch_map (
+  relationship_id INTEGER DEFAULT nextval('vendor_sibling_mismatch_seq'),
+  vendor_customer_a_id INTEGER REFERENCES vendor_customers(vendor_customer_id),
+  vendor_customer_b_id INTEGER REFERENCES vendor_customers(vendor_customer_id),
+  PRIMARY KEY (vendor_customer_a_id, vendor_customer_b_id)
+);
+
 
