@@ -2,7 +2,9 @@ import streamlit as st
 
 from config import (APP_PATHS)
 from data_commands.context import get_app_context
-from data_commands.commands import add_parent, get_data, bulk_insert_relationships
+from data_commands.commands import add_parent, get_data, add_vendor_ids_to_existing_parent_id
+
+
 
 ctx = get_app_context(APP_PATHS)
 
@@ -25,155 +27,95 @@ with st.sidebar:
 review_queue, history, entities = st.tabs(["Review Queue", "History", "Entities"
 ])
 
-# with vendor_to_parent_suggestions: 
-    
-#     vendor_to_parent_selected: bool = False
-
-#     vendor_to_parent_candidates_df = get_data(
-#         ctx.db_conn, 
-#         "vendor_to_parent_candidates"
-#     )
-
-#     if vendor_to_parent_candidates_df.empty:
-#         st.write("Congratulations! No vendor to parent candidate suggestions available")
-#     else:
-#         if "vendor_to_parent_table_version" not in st.session_state:
-#             st.session_state["vendor_to_parent_table_version"] = 0
-
-#         selection = st.dataframe(
-#             vendor_to_parent_candidates_df,
-#             on_select="rerun",
-#             selection_mode="multi-row",
-#             key=f"vendor_to_parent_candidates_df_{st.session_state['vendor_to_parent_table_version']}"
-#         )
-
-#         selected_indices = selection.selection.rows
-
-#         if selected_indices:
-#             st.session_state["selected_vendor_to_parent_df"] = (
-#                 vendor_to_parent_candidates_df
-#                 .iloc[selected_indices]
-#                 [["vendor_customer_id", "parent_account_id"]]
-#             )
-            
-#             vendor_to_parent_selected = True
-
-#         if st.button("accept selected"):
-            
-#             if vendor_to_parent_selected: 
-                
-#                 bulk_insert_relationships(
-#                     ctx.db_conn,
-#                     target_table="vendor_customer_to_parent_account_map", 
-#                     parent_child_id_df=st.session_state["selected_vendor_to_parent_df"]
-#                 )
-
-#                 del st.session_state["selected_vendor_to_parent_df"] 
-#                 st.session_state["vendor_to_parent_table_version"] += 1
-#                 st.rerun()
-
-
-#         if st.button("reject selected"): 
-            
-#             if vendor_to_parent_selected:
-
-#                 bulk_insert_relationships(
-#                     ctx.db_conn,
-#                     target_table="mismatch_vendor_customer_to_parent_account_map", 
-#                     parent_child_id_df=st.session_state["selected_vendor_to_parent_df"]
-#                 )
-
-#                 del st.session_state["selected_vendor_to_parent_df"]
-#                 st.session_state["vendor_to_parent_table_version"] += 1          
-#                 st.rerun()
-
-# with vendor_to_erp_suggestions:
-
-#     vendor_to_erp_candidates_df = get_data(
-#         ctx.db_conn, 
-#         "vendor_to_erp_candidates"
-#     ).reset_index(drop=True)
-
-#     if vendor_to_erp_candidates_df.empty:
-    
-#         st.write("Congratulations! No vendor to erp candidate at this time, check back later")
-    
-#     else:
-        
-#         vendor_to_erp_selected: bool = False
-
-#         if "vendor_to_erp_table_version" not in st.session_state:
-#             st.session_state["vendor_to_erp_table_version"] = 0
-
-#         selection = st.dataframe(
-#             vendor_to_erp_candidates_df,
-#             on_select="rerun",
-#             selection_mode="multi-row",
-#             key=f"vendor_to_erp_candidates_table_{st.session_state['vendor_to_erp_table_version']}"
-#         )
-
-#         selected_indices = selection.selection.rows
-
-#         if selected_indices:
-#             st.session_state["selected_vendor_to_erp_ids"] = (
-#                 vendor_to_erp_candidates_df
-#                 .iloc[selected_indices]
-#                 [["vendor_customer_id", "erp_account_id"]]
-#             )
-
-#             vendor_to_erp_selected = True
-            
-
-#         if st.button("Accept Selected"):
-#             if vendor_to_erp_selected: 
-                
-#                 bulk_insert_relationships(
-#                     ctx.db_conn,
-#                     target_table="vendor_customer_to_erp_account_map", 
-#                     parent_child_id_df=st.session_state["selected_vendor_to_erp_ids"]
-#                 )
-
-#                 st.session_state["vendor_to_erp_table_version"] += 1
-#                 del st.session_state.selected_vendor_to_erp_ids
-#                 st.rerun()
-            
-#         if st.button("Reject Selected"):
-#             if vendor_to_erp_selected: 
-                
-#                 bulk_insert_relationships(
-#                     ctx.db_conn,
-#                     target_table="mismatch_vendor_customer_to_erp_account_map", 
-#                     parent_child_id_df=st.session_state["selected_vendor_to_erp_ids"]
-#                 )
-                
-#                 st.session_state["vendor_to_erp_table_version"] += 1
-#                 del st.session_state.selected_vendor_to_erp_ids
-#                 st.rerun()
-
-
 with review_queue:
     if "candidate_index" not in st.session_state:
         st.session_state.candidate_index = 0
-    
+
+    if "candidate_df" not in st.session_state:
+        st.session_state.candidate_df = get_data(
+            ctx.db_conn, "potential_vendor_siblings"
+        )
+
+    if "max_candidate_idx" not in st.session_state:
+        max_idx = st.session_state.candidate_df["candidate_index"].max()
+        st.session_state.max_candidate_idx = max_idx
+        if max_idx > 0:
+            st.session_state.candidate_index = 1
+
+    if "suggested_parents_df" not in st.session_state:
+        st.session_state.suggested_parents_df = get_data(
+            ctx.db_conn, "suggested_vendor_parents"
+        )
+
     st.subheader(f"Candidate Group")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
+
+    candidates_df = st.session_state.candidate_df[
+        st.session_state.candidate_df["candidate_index"] == st.session_state.candidate_index
+    ]
+
+    selected_siblings = st.dataframe(
+        candidates_df, 
+        selection_mode="multi-row", 
+        on_select="rerun", 
+        key="vendor_customer_candidate_siblings_df"
+    )
+
+    selected_siblings_idicies = selected_siblings.selection.rows
+
+    if selected_siblings_idicies != []:
+
+        st.session_state.selected_sibling_ids = tuple(
+            candidates_df
+            .iloc[selected_siblings_idicies]
+            ["vendor_customer_id"]
+        )
+
+    # =================== Parent Selection =====================
+
+    st.subheader(f"Suggested Parents")
+
+    selected_parent = st.dataframe(
+        st.session_state.suggested_parents_df, 
+        selection_mode="single-row", 
+        on_select="rerun",
+        key="suggested_vendor_parent_df"
+    )
+
+
+    selected_parent_id = list(
+        st.session_state.suggested_parents_df
+        .iloc[selected_parent.selection.rows]
+        ["parent_account_id"]
+    )
+
+    if selected_parent_id != []:
+        st.session_state.selected_parent_id = selected_parent_id[0]
 
     with col1:
         if st.button("Previous"):
-            st.session_state.candidate_index -= 1
+            if st.session_state.candidate_index > 0:
+                st.session_state.candidate_index -= 1
             st.rerun()
 
     with col2:
-        if st.button("Accept Group"):
-            # accept_group(current_group)
-            st.session_state.candidate_index += 1
-            st.rerun()
+        if st.button("Add To Parent"):
+            # TODO: enforce suggested parent or other parent is selected
 
-    with col3:
-        if st.button("Reject Group"):
-            # reject_group(current_group)
-            st.session_state.candidate_index += 1
+            add_vendor_ids_to_existing_parent_id(
+                ctx.db_conn, 
+                st.session_state.selected_sibling_ids, 
+                st.session_state.selected_parent_id
+            )
+            
+            del st.session_state.selected_sibling_ids
+            del st.session_state.selected_parent_id
+            
+            if st.session_state.candidate_index > st.session_state.max_candidate_idx:
+                st.session_state.candidate_index += 1
+            
+
             st.rerun()
 
 

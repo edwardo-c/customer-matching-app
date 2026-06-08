@@ -18,6 +18,20 @@ def add_parent(
         [name, norm_name, norm_name[:3]]
     )
 
+def gen_vendor_ids_to_parent_id_df(
+        parent_id: int, 
+        children_ids: tuple[int, ...]
+    ) -> pd.DataFrame:
+    """
+    generates a dataframe where parent_id is repeated per distinct each child id
+    schema matches vendor_customer_to_parent_account_map schema
+    """
+    return pd.DataFrame({
+        "vendor_customer_id": [child for child in children_ids],
+        "parent_account_id": [parent_id] * len(children_ids)
+    })
+    
+
 def bulk_insert_relationships(
         conn: duckdb.DuckDBPyConnection, 
         target_table: str,
@@ -40,53 +54,26 @@ def bulk_insert_relationships(
     finally:
         conn.unregister("parent_child_id_df")
 
+def add_vendor_ids_to_existing_parent_id(
+        conn: duckdb.DuckDBPyConnection, 
+        vendor_customer_ids: tuple[int, ...],
+        parent_id: int
+    ):
 
-# # ============== DEPRECATED =======================
+    if parent_id is None:
+        raise TypeError("parent_id must be type int, got None")
 
-# from data_commands.context import AppContext
-# from data_commands.matcher_cfg import CandidateUploadCfg, load_candidate_pair, load_target_table
-# from data_commands.matcher import MatchingPipeline
-# from dataclasses import dataclass
-# from datetime import datetime
-
-# @dataclass
-# class AppRefreshCfg:
-#     vendor_to_erp_candidates_cfg: CandidateUploadCfg
-
-# def insert_batch(conn: duckdb.DuckDBPyConnection, row: list) -> None:
-#     conn.execute("INSERT INTO batches BY POSITION (rows_added, target_table, upload_datetime) VALUES (?, ?, ?)", row)
-
-# def load_candidates_table(
-#         ctx: AppContext,
-#         cfg: CandidateUploadCfg
-#     ):
-
-#     mp = MatchingPipeline(
-#         candidates=load_candidate_pair(ctx.db_conn, cfg.candidates_cfg), 
-#         target=load_target_table(ctx.db_conn, cfg.target_table_cfg)
-#     )
-
-#     if not mp.new_candidates_df.empty:
-
-#         insert_batch(ctx.db_conn, [
-#             len(mp.new_candidates_df), 
-#             mp.target.name, 
-#             datetime.now()
-#         ])
-
-#         new_candidates_df = mp.new_candidates_df
-
-#         ctx.db_conn.register("new_candidates_df", new_candidates_df)
-
-#         ctx.db_conn.execute(
-#             f"""
-#             INSERT INTO {mp.target.name} BY NAME
-#             SELECT * FROM new_candidates_df
-#             """
-#         )
+    _df = gen_vendor_ids_to_parent_id_df(
+        parent_id=parent_id, 
+        children_ids=vendor_customer_ids
+    )
+    
+    bulk_insert_relationships(
+        conn, 
+        target_table="vendor_customer_to_parent_account_map",
+        parent_child_id_df=_df)
 
 
-# def refresh_app(ctx: AppContext, cfg: AppRefreshCfg):
-#     load_candidates_table(ctx, cfg.vendor_to_erp_candidates_cfg)
+
 
 
