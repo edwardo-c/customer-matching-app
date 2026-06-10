@@ -1,9 +1,11 @@
 import pandas as pd
 import string
 import re
+import logging
+
 
 STOP_WORDS = [
-    'the', 'a', 'an', "dll"
+    'the', 'a', 'an', "dll",
     'inc', 'llc', 'corp', 'company', 'co', 'ltd', 'holdings', 'group'
 ]
 
@@ -23,12 +25,16 @@ def remove_multiple_spaces(text: str):
     return re.sub(r'  +', " ", text)
 
 def normalize_str(text: str):
-    text = text.lower()
-    text = replace_ampersand(text)
-    text = remove_punctuation(text)
-    text = remove_suffixes(text)
-    text = remove_multiple_spaces(text)
-    text = text.strip()
+    if isinstance(text, str):
+        text = text.lower()
+        text = replace_ampersand(text)
+        text = remove_punctuation(text)
+        text = remove_suffixes(text)
+        text = remove_multiple_spaces(text)
+        text = text.strip()
+    else:
+        logging.error(f"{text} is not type str, skipping normalization")
+
     return text
 
 def normalize_col(
@@ -40,7 +46,9 @@ def normalize_col(
     """
     normalize specified column 
     return DataFrame with col_out_name added holding normalized values
+    and "is_str" used for debugging, normalization is only applied to str data types
     """
+    df["is_str"] = df[col_in_name].apply(isinstance, args=(str,))
     df[col_out_name] = df[col_in_name].astype(str).apply(normalize_str)
     return df
 

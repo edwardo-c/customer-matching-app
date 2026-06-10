@@ -67,7 +67,7 @@ SELECT DISTINCT
 FROM potential_vendor_siblings base
 JOIN parent_accounts p ON 
   base.first3_token = p.first3_token
-)
+);
 
 
 

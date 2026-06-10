@@ -23,7 +23,6 @@ CREATE TABLE vendor_customers (
     normalized_vendor_customer_name VARCHAR NOT NULL,
     billing_zip VARCHAR,
     billing_state VARCHAR,
-    billing_city VARCHAR,
     first3_token VARCHAR NOT NULL 
 );
 

@@ -1,10 +1,9 @@
 import streamlit as st
 
-from config import (APP_PATHS)
+from config import (APP_PATHS, VENDOR_CUSTOMERS_CFG)
 from data_commands.context import get_app_context
 from data_commands.commands import add_parent, get_data, add_vendor_ids_to_existing_parent_id
-
-
+from refresh.vendor_customers import import_new_vendor_customers
 
 ctx = get_app_context(APP_PATHS)
 
@@ -22,6 +21,10 @@ with st.sidebar:
             if parent_name:
                 st.write(f"Parent {parent_name} submitted")
                 add_parent(ctx.db_conn, parent_name)
+    
+    if st.button("Refresh Vendor Customers"):
+        import_new_vendor_customers(VENDOR_CUSTOMERS_CFG, ctx.db_conn)
+
 
 # ===== Tabs ======
 review_queue, history, entities = st.tabs(["Review Queue", "History", "Entities"
@@ -115,7 +118,7 @@ with review_queue:
             if st.session_state.candidate_index > st.session_state.max_candidate_idx:
                 st.session_state.candidate_index += 1
             
-
+                                          
             st.rerun()
 
 
