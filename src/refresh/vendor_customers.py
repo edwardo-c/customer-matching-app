@@ -4,79 +4,102 @@ from pathlib import Path
 import pandas as pd
 from dataclasses import dataclass, field
 import duckdb
-from data_commands.normalizer import normalize_col
-from src.refresh.cleaner import clean_zip_col
+from data_commands.normalizer import add_normalized_name_col, add_first3_token
+from refresh.cleaner import add_cleaned_zip_col
+from data_commands.commands import bulk_insert_target_table
 
-@dataclass
-class Col:
-    name: str
-    rename: str
+@dataclass(frozen=True)
+class VendorCustomerSchema:
+    """
+    User provides name of the column to be renamed as the attribute name
+    """
+    vendor_name: str
+    raw_vendor_customer_name: str
+    raw_billing_zip: str
+    billing_state: str
+    period_date: str
 
 @dataclass(frozen=True)
 class VendorCustomerCfg:
     path: Path
     sheet: str
-    schema: list[Col]
     sql_path: Path
-    expected_cols: list[str] = field(default_factory=list)
+    schema: VendorCustomerSchema
     rename_map: dict[str, str] = field(default_factory=dict)
-    final_schema: list[str] = field(default_factory=list)
-    normalize_col_in: str = "raw_vendor_customer_name"
-    normalize_col_out: str = "normalized_vendor_customer_name"
-    register_as: str = "vendor_customer_staging"
-    zip_col_name: str = "billing_zip"
+    expected_cols: list[str] = field(default_factory=list)
 
     def __post_init__(self):
-        _final_schema = []
-        _expected_cols = []
         _rename_map = {}
-        for c in self.schema:
-            _expected_cols.append(c.name)
-            _final_schema.append(c.rename)
-            _rename_map[c.name] = c.rename
+        _expected_cols = []
+        for k, v in vars(self.schema).items():
+            _rename_map[v] = k
+            _expected_cols.append(v)
 
         object.__setattr__(self, "rename_map", _rename_map)
-        object.__setattr__(self, "final_schema", _final_schema)
         object.__setattr__(self, "expected_cols", _expected_cols)
 
-def read_dot_sql(path: Path) -> str:
-    return path.read_text(encoding="utf-8")
 
-def _validate_schema(
+def validate_schema(
         *,
         current_cols: list[str], 
-        expected_cols: list[Col]
+        expected_cols: list[str]
     ) -> None:
-    """Confirm all columns in expected schema exist in current cols"""
+    """
+    Confirm all columns in expected schema exist in current cols
+    raises on missing column
+    """
     for col in expected_cols:
         if col not in current_cols:
             raise KeyError(f"missing expected column: {col}")
 
-def import_new_vendor_customers(cfg: VendorCustomerCfg, conn: duckdb.DuckDBPyConnection):
+def import_new_vendor_customers(
+        cfg: VendorCustomerCfg, 
+        conn: duckdb.DuckDBPyConnection
+    ):
     """
-    Primary runner for importing new vendor customers to db, drops rows where name is na
+    Primary runner for importing new vendor customers to db
+    
+    raises on missing expected columns
+
+    adds normalized columns [normalized_vendor_customer_name, normalized_billing_zip, first3_token]
     """
     df = pd.read_excel(str(cfg.path), sheet_name=cfg.sheet)
 
-    _validate_schema(
+    validate_schema(
         current_cols=list(df.columns), 
         expected_cols=cfg.expected_cols
     )
 
-    df = df.rename(columns=cfg.rename_map)[cfg.final_schema].drop_duplicates()
-
-    df = clean_zip_col(cfg.zip_col_name, df)
+    df = df.rename(columns=cfg.rename_map)
 
     df = df[df["raw_vendor_customer_name"].isna() == False]
 
-    norm_df = normalize_col(
-        df=df, 
-        col_in_name=cfg.normalize_col_in, 
-        col_out_name=cfg.normalize_col_out
+    # drop duplicates handled in sql EXCEPT
+
+    df = add_cleaned_zip_col(
+        df=df,
+        col_in_name="raw_billing_zip", 
+        col_out_name="normalized_billing_zip"
     )
 
-    conn.register(cfg.register_as, norm_df)
+    df = add_normalized_name_col(
+        df=df, 
+        col_in_name="raw_vendor_customer_name", 
+        col_out_name="normalized_vendor_customer_name"
+    )
 
-    new_vendor_customers = conn.sql(cfg.sql_path.read_text(encoding="utf-8")).df()
+    df = add_first3_token(
+        df=df, 
+        col_in_name="normalized_vendor_customer_name",
+        col_out_name="first3_token"
+    )
 
-    breakpoint()
+    conn.register("raw_vendor_customer_staging", df)
+
+    bulk_insert_target_table(
+        conn, 
+        "vendor_customers", 
+        conn.sql(cfg.sql_path.read_text(encoding="utf-8")).df()
+    )
+
+    # TODO: insert into Batches

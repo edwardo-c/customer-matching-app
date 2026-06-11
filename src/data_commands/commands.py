@@ -23,7 +23,7 @@ def gen_vendor_ids_to_parent_id_df(
         children_ids: tuple[int, ...]
     ) -> pd.DataFrame:
     """
-    generates a dataframe where parent_id is repeated per distinct each child id
+    generates a dataframe where parent_id is repeated per distinct child id
     schema matches vendor_customer_to_parent_account_map schema
     """
     return pd.DataFrame({
@@ -31,13 +31,16 @@ def gen_vendor_ids_to_parent_id_df(
         "parent_account_id": [parent_id] * len(children_ids)
     })
     
-
-def bulk_insert_relationships(
+def bulk_insert_target_table(
         conn: duckdb.DuckDBPyConnection, 
         target_table: str,
-        parent_child_id_df: pd.DataFrame
+        staging_table_df: pd.DataFrame
     ):
-    conn.register("parent_child_id_df", parent_child_id_df)
+    """
+    attempts to insert into target table with rollback safe gaurd
+    assumes matching schemas between tables
+    """
+    conn.register("staging_table", staging_table_df)
 
     conn.execute("BEGIN TRANSACTION")
 
@@ -45,14 +48,14 @@ def bulk_insert_relationships(
         conn.execute(f"""
             INSERT INTO {target_table} BY NAME
             SELECT *
-            FROM parent_child_id_df
+            FROM staging_table
         """)
         conn.execute("COMMIT")
     except Exception:
         conn.execute("ROLLBACK")
         raise
     finally:
-        conn.unregister("parent_child_id_df")
+        conn.unregister("staging_table")
 
 def add_vendor_ids_to_existing_parent_id(
         conn: duckdb.DuckDBPyConnection, 
@@ -68,12 +71,11 @@ def add_vendor_ids_to_existing_parent_id(
         children_ids=vendor_customer_ids
     )
     
-    bulk_insert_relationships(
+    bulk_insert_target_table(
         conn, 
         target_table="vendor_customer_to_parent_account_map",
-        parent_child_id_df=_df)
-
-
-
+        staging_table_df=_df
+    )
+    
 
 

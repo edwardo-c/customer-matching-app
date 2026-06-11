@@ -6,7 +6,7 @@ SELECT
   vc.normalized_vendor_customer_name,
   vc.first3_token,
   vc.billing_state,
-  vc.billing_zip,
+  vc.normalized_billing_zip,
   p.parent_account_name
 FROM vendor_customers vc
 
@@ -18,14 +18,14 @@ LEFT JOIN parent_accounts p ON
 WHERE 
   vc.first3_token IS NOT NULL
   AND vc.billing_state IS NOT NULL
-  AND vc.billing_zip IS NOT NULL
+  AND vc.normalized_billing_zip IS NOT NULL
 ), 
 
 counted AS (
 SELECT 
   *,
   COUNT(*) OVER (
-    PARTITION BY base.first3_token, base.billing_state, base.billing_zip
+    PARTITION BY base.first3_token, base.billing_state, base.normalized_billing_zip
   ) AS sibling_count
 FROM base
 ), 
@@ -40,7 +40,7 @@ ranked AS (
 SELECT 
   *,
   DENSE_RANK() OVER (
-  PARTITION BY filtered.first3_token, filtered.billing_state, filtered.billing_zip
+  PARTITION BY filtered.first3_token, filtered.billing_state, filtered.normalized_billing_zip
   ) AS candidate_index
 FROM filtered
 
@@ -53,7 +53,7 @@ SELECT
   normalized_vendor_customer_name,
   first3_token,
   billing_state,
-  billing_zip
+  normalized_billing_zip
 FROM ranked
 );
 

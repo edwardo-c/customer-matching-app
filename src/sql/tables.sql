@@ -21,8 +21,10 @@ CREATE TABLE vendor_customers (
     vendor_name VARCHAR,
     raw_vendor_customer_name VARCHAR,
     normalized_vendor_customer_name VARCHAR NOT NULL,
-    billing_zip VARCHAR,
+    raw_billing_zip VARCHAR,
+    normalized_billing_zip VARCHAR,
     billing_state VARCHAR,
+    period_date DATE,
     first3_token VARCHAR NOT NULL 
 );
 
@@ -32,7 +34,8 @@ CREATE TABLE erp_accounts (
     erp_account_number VARCHAR UNIQUE NOT NULL,
     erp_account_name VARCHAR NOT NULL,
     normalized_erp_account_name VARCHAR NOT NULL,
-    billing_zip VARCHAR,
+    raw_billing_zip VARCHAR,
+    normalized_billing_zip VARCHAR,
     billing_state VARCHAR,
     billing_city VARCHAR,
     first3_token VARCHAR NOT NULL 
