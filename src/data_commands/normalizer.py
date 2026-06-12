@@ -60,6 +60,9 @@ def add_normalized_name_col(
     df[col_out_name] = df[col_in_name].astype(str).apply(normalize_str)
     return df
 
+def first3_token(s: str) -> str:
+    return s.replace(" ", "")[0:3]
+
 def add_first3_token(
         *,
         df: pd.DataFrame, 
@@ -67,6 +70,6 @@ def add_first3_token(
         col_out_name: str
     ):
     
-    df[col_out_name] = df[col_in_name].apply(lambda x: x.replace(" ", "")[0:3])
+    df[col_out_name] = df[col_in_name].apply(first3_token)
     return df
 

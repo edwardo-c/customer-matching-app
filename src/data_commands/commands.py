@@ -1,6 +1,7 @@
 import duckdb
 import pandas as pd
 from data_commands.normalizer import normalize_str
+from data_commands.normalizer import first3_token
 
 def get_data(conn: duckdb.DuckDBPyConnection, relation_name: str) -> pd.DataFrame:
     return conn.execute(f"SELECT * FROM {relation_name}").df()
@@ -10,12 +11,13 @@ def add_parent(
         name: str
     ):
     norm_name = normalize_str(name)
+    token = first3_token(norm_name)
     conn.execute(
         """
         INSERT INTO parent_accounts (parent_account_name, normalized_parent_name, first3_token) 
         VALUES (?, ?, ?)
         """, 
-        [name, norm_name, norm_name[:3]]
+        [name, norm_name, token]
     )
 
 def gen_vendor_ids_to_parent_id_df(

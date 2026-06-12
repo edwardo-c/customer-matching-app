@@ -10,122 +10,106 @@ ctx = get_app_context(APP_PATHS)
 st.set_page_config(layout="wide")
 st.title("POS Cross Reference")
 
-"""
-TODO: feature to make corrections
-"""
-
-
 # ==== Sidebar =====
-with st.sidebar:
-    with st.form("new_parent", clear_on_submit=True):
-        parent_name = st.text_input("Enter New Parent")
-
-        submitted = st.form_submit_button("Submit")
-
-        if submitted:
-            if parent_name:
-                st.write(f"Parent {parent_name} submitted")
-                add_parent(ctx.db_conn, parent_name)
-    
+with st.sidebar:    
     if st.button("Refresh Vendor Customers"):
         import_new_vendor_customers(VENDOR_CUSTOMERS_CFG, ctx.db_conn)
 
 
 # ===== Tabs ======
-review_queue, history, entities = st.tabs(["Review Queue", "History", "Entities"
-])
+review_queue, history, entities = st.tabs(["Review Queue", "History", "Entities"])
 
 with review_queue:
-    if "candidate_index" not in st.session_state:
-        st.session_state.candidate_index = 0
+    if "sibling_batch_index" not in st.session_state:
+        st.session_state.sibling_batch_index = 0
+    
+    if "selected_siblings_ids" not in st.session_state:
+        st.session_state.selected_siblings_ids = []
 
-    if "candidate_df" not in st.session_state:
-        st.session_state.candidate_df = get_data(
-            ctx.db_conn, "potential_vendor_siblings"
-        )
+    if "selected_parent_id" not in st.session_state:
+        st.session_state.selected_parent_id = None
 
-    if "max_candidate_idx" not in st.session_state:
-        max_idx = st.session_state.candidate_df["candidate_index"].max()
-        st.session_state.max_candidate_idx = max_idx
-        if max_idx > 0:
-            st.session_state.candidate_index = 1
+    next, previous, accept = st.columns(3)
+
+    # ==== Group Navigation ===== #
+    with next: 
+        if st.button("next group"):
+            st.session_state.sibling_batch_index += 1
+    
+    with previous:
+        if st.button("previous group"):
+            st.session_state.sibling_batch_index -= 1
+
+    # ==== Parent Workflow ==== #
+
+    add_new_parent, suggested_parents = st.columns(2)
 
     if "suggested_parents_df" not in st.session_state:
         st.session_state.suggested_parents_df = get_data(
             ctx.db_conn, "suggested_vendor_parents"
         )
 
-    st.subheader(f"Candidate Group")
+    with add_new_parent:
+        with st.form("new_parent", clear_on_submit=True):
+            parent_name = st.text_input("Enter New Parent")
 
-    col1, col2 = st.columns(2)
+            if st.form_submit_button("submit"):
+                if parent_name:
+                    st.write(f"Parent {parent_name} submitted")
+                    add_parent(ctx.db_conn, parent_name)
 
-    candidates_df = st.session_state.candidate_df[
-        st.session_state.candidate_df["candidate_index"] == st.session_state.candidate_index
-    ]
+    with suggested_parents:
+        st.caption("Suggested Parents")
 
-    selected_siblings = st.dataframe(
-        candidates_df, 
+        st.caption("toggle suggested parents or all parents (sorted by newest to oldest)")
+
+        selected_parent = st.dataframe(
+            st.session_state.suggested_parents_df, 
+            selection_mode="single-row", 
+            on_select="rerun",
+            key="suggested_vendor_parent_df"
+        )
+        
+        parent_idx = selected_parent.selection.rows
+        if parent_idx != []:
+           parent_id = int(st.session_state.suggested_parents_df.iloc[parent_idx]["parent_account_id"].item())
+           st.session_state.selected_parent_id = parent_id
+
+
+    with accept:
+        if st.button("submit relationship"):
+            add_vendor_ids_to_existing_parent_id(
+                ctx.db_conn, 
+                st.session_state.selected_siblings_ids,
+                st.session_state.selected_parent_id    
+            )
+            del st.session_state.selected_siblings_ids
+            del st.session_state.selected_parent_id
+
+    # =================================================
+
+    if "potential_vendor_siblings" not in st.session_state:
+        st.session_state.potential_vendor_siblings = get_data(
+            ctx.db_conn, "potential_vendor_siblings"
+        )
+    
+    siblings = st.dataframe(
+        st.session_state.potential_vendor_siblings[
+            st.session_state.potential_vendor_siblings["group_index"] == st.session_state.sibling_batch_index
+        ],
         selection_mode="multi-row", 
-        on_select="rerun", 
-        key="vendor_customer_candidate_siblings_df"
+        on_select="rerun",
+        key="siblings_df"
     )
 
-    selected_siblings_idicies = selected_siblings.selection.rows
+    selected_siblings_idicies = siblings.selection.rows
 
     if selected_siblings_idicies != []:
-
-        st.session_state.selected_sibling_ids = tuple(
-            candidates_df
+        st.session_state.selected_siblings_ids = tuple(
+            st.session_state.potential_vendor_siblings
             .iloc[selected_siblings_idicies]
             ["vendor_customer_id"]
         )
-
-    # =================== Parent Selection =====================
-
-    st.subheader(f"Suggested Parents")
-
-    selected_parent = st.dataframe(
-        st.session_state.suggested_parents_df, 
-        selection_mode="single-row", 
-        on_select="rerun",
-        key="suggested_vendor_parent_df"
-    )
-
-
-    selected_parent_id = list(
-        st.session_state.suggested_parents_df
-        .iloc[selected_parent.selection.rows]
-        ["parent_account_id"]
-    )
-
-    if selected_parent_id != []:
-        st.session_state.selected_parent_id = selected_parent_id[0]
-
-    with col1:
-        if st.button("Previous"):
-            if st.session_state.candidate_index > 0:
-                st.session_state.candidate_index -= 1
-            st.rerun()
-
-    with col2:
-        if st.button("Add To Parent"):
-            # TODO: enforce suggested parent or other parent is selected
-
-            add_vendor_ids_to_existing_parent_id(
-                ctx.db_conn, 
-                st.session_state.selected_sibling_ids, 
-                st.session_state.selected_parent_id
-            )
-            
-            del st.session_state.selected_sibling_ids
-            del st.session_state.selected_parent_id
-            
-            if st.session_state.candidate_index > st.session_state.max_candidate_idx:
-                st.session_state.candidate_index += 1
-            
-                                          
-            st.rerun()
-
 
 with history:
     st.write("history here")
