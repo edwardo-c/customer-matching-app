@@ -2,8 +2,11 @@ import streamlit as st
 
 from config import (APP_PATHS, VENDOR_CUSTOMERS_CFG)
 from data_commands.context import get_app_context
-from data_commands.commands import add_parent, get_data, add_vendor_ids_to_existing_parent_id
+from data_commands.commands import get_data, bulk_insert_target_table, resolve_accepted_sibling_pair, add_parent
 from refresh.vendor_customers import import_new_vendor_customers
+from data_commands.db_schema import VendorCustomerToParentMap, RejectedVendorCustomerToParentMap
+import pandas as pd
+from column_configs import SUGGESTED_VENDOR_SIBLINGS_CFG
 
 ctx = get_app_context(APP_PATHS)
 
@@ -11,110 +14,121 @@ st.set_page_config(layout="wide")
 st.title("POS Cross Reference")
 
 # ==== Sidebar =====
-with st.sidebar:    
-    if st.button("Refresh Vendor Customers"):
+with st.sidebar:
+    if st.button("Load New Vendor Customers"):
         import_new_vendor_customers(VENDOR_CUSTOMERS_CFG, ctx.db_conn)
-
-
-# ===== Tabs ======
-review_queue, history, entities = st.tabs(["Review Queue", "History", "Entities"])
+            
+review_queue, history, entities, manual_adjustments = st.tabs(
+    ["Review Queue", "History", "Entities", "Manual Adjustments"]
+)
 
 with review_queue:
-    if "sibling_batch_index" not in st.session_state:
-        st.session_state.sibling_batch_index = 0
-    
-    if "selected_siblings_ids" not in st.session_state:
-        st.session_state.selected_siblings_ids = []
+    with st.expander("View Vendor Customer To Existing Parent Suggestions"):
 
-    if "selected_parent_id" not in st.session_state:
-        st.session_state.selected_parent_id = None
-
-    next, previous, accept = st.columns(3)
-
-    # ==== Group Navigation ===== #
-    with next: 
-        if st.button("next group"):
-            st.session_state.sibling_batch_index += 1
-    
-    with previous:
-        if st.button("previous group"):
-            st.session_state.sibling_batch_index -= 1
-
-    # ==== Parent Workflow ==== #
-
-    add_new_parent, suggested_parents = st.columns(2)
-
-    if "suggested_parents_df" not in st.session_state:
-        st.session_state.suggested_parents_df = get_data(
-            ctx.db_conn, "suggested_vendor_parents"
-        )
-
-    with add_new_parent:
-        with st.form("new_parent", clear_on_submit=True):
-            parent_name = st.text_input("Enter New Parent")
-
-            if st.form_submit_button("submit"):
-                if parent_name:
-                    st.write(f"Parent {parent_name} submitted")
-                    add_parent(ctx.db_conn, parent_name)
-
-    with suggested_parents:
-        st.caption("Suggested Parents")
-
-        st.caption("toggle suggested parents or all parents (sorted by newest to oldest)")
-
-        selected_parent = st.dataframe(
-            st.session_state.suggested_parents_df, 
-            selection_mode="single-row", 
-            on_select="rerun",
-            key="suggested_vendor_parent_df"
-        )
+        accepted, rejected = st.columns(2)
         
-        parent_idx = selected_parent.selection.rows
-        if parent_idx != []:
-           parent_id = int(st.session_state.suggested_parents_df.iloc[parent_idx]["parent_account_id"].item())
-           st.session_state.selected_parent_id = parent_id
+        if "vendor_customer_to_parent_suggestion_version" not in st.session_state:
+            st.session_state.vendor_customer_to_parent_suggestion_version = 0
 
-
-    with accept:
-        if st.button("submit relationship"):
-            add_vendor_ids_to_existing_parent_id(
-                ctx.db_conn, 
-                st.session_state.selected_siblings_ids,
-                st.session_state.selected_parent_id    
+        if "vendor_customer_to_parent_suggestion_df" not in st.session_state:
+            st.session_state.vendor_customer_to_parent_suggestion_df = get_data(
+                ctx.db_conn, relation_name="vendor_customer_to_parent_suggestions"
             )
-            del st.session_state.selected_siblings_ids
-            del st.session_state.selected_parent_id
 
-    # =================================================
+        if "selected_vendor_customer_to_parent_df" not in st.session_state:
+            st.session_state.selected_vendor_customer_to_parent_df = pd.DataFrame(
+                columns=[VendorCustomerToParentMap.VENDOR_CUSTOMER_ID, VendorCustomerToParentMap.PARENT_ACCOUNT_ID]
+            )
 
-    if "potential_vendor_siblings" not in st.session_state:
-        st.session_state.potential_vendor_siblings = get_data(
-            ctx.db_conn, "potential_vendor_siblings"
+        vendor_customer_to_parent_row_selection = st.dataframe(
+            st.session_state.vendor_customer_to_parent_suggestion_df,
+            selection_mode="multi-row",
+            on_select="rerun",
+            key=f"vendor_customer_to_parent_suggestion_df_{st.session_state.vendor_customer_to_parent_suggestion_version}"
         )
-    
-    siblings = st.dataframe(
-        st.session_state.potential_vendor_siblings[
-            st.session_state.potential_vendor_siblings["group_index"] == st.session_state.sibling_batch_index
-        ],
-        selection_mode="multi-row", 
-        on_select="rerun",
-        key="siblings_df"
-    )
 
-    selected_siblings_idicies = siblings.selection.rows
+        if vendor_customer_to_parent_row_selection.selection.rows != []:
+            selected_rows = vendor_customer_to_parent_row_selection.selection.rows
+            st.session_state.selected_vendor_customer_to_parent_df = (
+                st.session_state.vendor_customer_to_parent_suggestion_df
+                .iloc[selected_rows]
+                [[VendorCustomerToParentMap.VENDOR_CUSTOMER_ID, VendorCustomerToParentMap.PARENT_ACCOUNT_ID]]
+            )
 
-    if selected_siblings_idicies != []:
-        st.session_state.selected_siblings_ids = tuple(
-            st.session_state.potential_vendor_siblings
-            .iloc[selected_siblings_idicies]
-            ["vendor_customer_id"]
+        with accepted:
+            if st.button("accept"):
+                bulk_insert_target_table(
+                    ctx.db_conn,
+                    target_table=VendorCustomerToParentMap.TABLE,
+                    staging_table_df=st.session_state.selected_vendor_customer_to_parent_df
+                )
+                del st.session_state.selected_vendor_customer_to_parent_df
+                del st.session_state.vendor_customer_to_parent_suggestion_df
+                st.session_state.vendor_customer_to_parent_suggestion_version += 1
+                st.rerun()
+            
+        with rejected:
+            if st.button("reject"):
+                bulk_insert_target_table(
+                    ctx.db_conn,
+                    target_table=RejectedVendorCustomerToParentMap.TABLE,
+                    staging_table_df=st.session_state.selected_vendor_customer_to_parent_df
+                )
+                del st.session_state.selected_vendor_customer_to_parent_df
+                del st.session_state.vendor_customer_to_parent_suggestion_df
+                st.session_state.vendor_customer_to_parent_suggestion_version += 1
+                st.rerun()
+
+    with st.expander("View Potential Siblings"):
+        
+        if "suggested_vendor_siblings_version" not in st.session_state:
+            st.session_state.suggested_vendor_siblings_version = 0
+
+        if "suggested_vendor_siblings_df" not in st.session_state:
+            _suggested_vendor_siblings_df = get_data(
+                ctx.db_conn, "suggested_vendor_siblings"
+            )
+            
+            _suggested_vendor_siblings_df.insert(0, 'decision', None)
+
+            st.session_state.suggested_vendor_siblings_df = _suggested_vendor_siblings_df
+
+        if "selected_siblings_ids_df" not in st.session_state:
+            st.session_state.selected_siblings_ids_df = pd.DataFrame(
+                columns=['left_vendor_customer_id','right_vendor_customer_id']
+            )
+
+        decisions_df = st.data_editor(
+            st.session_state.suggested_vendor_siblings_df,
+            column_config=SUGGESTED_VENDOR_SIBLINGS_CFG,
+            key=f"suggested_vendor_siblings_df_{st.session_state.suggested_vendor_siblings_version}",
+            hide_index=True,
         )
+
+        if st.button("submit relationships"):
+            siblings_ids_to_process_df = (
+                decisions_df
+                [decisions_df['decision'].notna()]
+                [['left_vendor_customer_id', 'right_vendor_customer_id']]
+            )
+
+            resolve_accepted_sibling_pair(
+                ctx.db_conn, 
+                sibling_ids_df=siblings_ids_to_process_df
+            )
 
 with history:
     st.write("history here")
 
 with entities:
     st.dataframe(get_data(ctx.db_conn, "parent_accounts"), key="parent_accounts_df")
-    st.dataframe(get_data(ctx.db_conn, "vendor_customers"), key="vendor_customers_df")
+    st.dataframe(get_data(ctx.db_conn, "vendor_customers_vw"), key="vendor_customers_df")
     st.dataframe(get_data(ctx.db_conn, "erp_accounts"), key="erp_accounts_df")
+
+
+with manual_adjustments:
+    with st.form("add new parent"):
+        new_parent = st.text_input("enter new parent")
+        submitted = st.form_submit_button(label="submit")
+        if submitted:
+            add_parent(ctx.db_conn, new_parent)

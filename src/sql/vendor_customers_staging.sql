@@ -1,7 +1,8 @@
 WITH base AS (
 SELECT DISTINCT ON (
     vendor_name, 
-    raw_vendor_customer_name
+    raw_vendor_customer_name,
+    normalized_billing_zip
   )
   vendor_name,
   raw_vendor_customer_name,
@@ -17,15 +18,18 @@ ORDER BY vendor_name, raw_vendor_customer_name, period_date ASC, normalized_bill
 
 SELECT 
   vendor_name,
-  raw_vendor_customer_name
+  raw_vendor_customer_name,
+  normalized_billing_zip
 FROM base
 
 EXCEPT 
 
 SELECT 
   vendor_name,
-  raw_vendor_customer_name
+  raw_vendor_customer_name,
+  normalized_billing_zip
 FROM vendor_customers
+
 ), expanded AS (
 SELECT
   inc.vendor_name,

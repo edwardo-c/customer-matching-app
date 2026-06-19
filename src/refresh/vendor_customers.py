@@ -98,8 +98,8 @@ def import_new_vendor_customers(
 
     bulk_insert_target_table(
         conn, 
-        "vendor_customers", 
-        conn.sql(cfg.sql_path.read_text(encoding="utf-8")).df()
+        target_table="vendor_customers", 
+        staging_table_df=conn.sql(cfg.sql_path.read_text(encoding="utf-8")).df()
     )
 
     # TODO: insert into Batches
