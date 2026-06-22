@@ -8,6 +8,7 @@ from data_commands.db_schema import VendorCustomerToParentMap, RejectedVendorCus
 import pandas as pd
 from column_configs import SUGGESTED_VENDOR_SIBLINGS_CFG
 from data_arrangers.vendor_siblings import prepare_vendor_siblings_df
+from tables.refresh import increment_table_versions
 
 ctx = get_app_context(APP_PATHS)
 
@@ -24,6 +25,14 @@ review_queue, history, entities, manual_adjustments = st.tabs(
 )
 
 with review_queue:
+    with st.expander("Add New Parent"):
+        with st.form("add new parent"):
+            new_parent = st.text_input("enter new parent")
+            submitted = st.form_submit_button(label="submit")
+            if submitted:
+                add_parent(ctx.db_conn, new_parent)
+                increment_table_versions()
+        
     with st.expander("View Vendor Customer To Existing Parent Suggestions"):
 
         accepted, rejected = st.columns(2)
@@ -65,7 +74,7 @@ with review_queue:
                 )
                 del st.session_state.selected_vendor_customer_to_parent_df
                 del st.session_state.vendor_customer_to_parent_suggestion_df
-                st.session_state.vendor_customer_to_parent_suggestion_version += 1
+                increment_table_versions()
                 st.rerun()
             
         with rejected:
@@ -77,7 +86,7 @@ with review_queue:
                 )
                 del st.session_state.selected_vendor_customer_to_parent_df
                 del st.session_state.vendor_customer_to_parent_suggestion_df
-                st.session_state.vendor_customer_to_parent_suggestion_version += 1
+                increment_table_versions()
                 st.rerun()
 
     with st.expander("View Potential Siblings"):
@@ -123,9 +132,3 @@ with entities:
     st.dataframe(get_data(ctx.db_conn, "erp_accounts"), key="erp_accounts_df")
 
 
-with manual_adjustments:
-    with st.form("add new parent"):
-        new_parent = st.text_input("enter new parent")
-        submitted = st.form_submit_button(label="submit")
-        if submitted:
-            add_parent(ctx.db_conn, new_parent)
