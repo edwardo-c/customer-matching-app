@@ -7,6 +7,7 @@ from refresh.vendor_customers import import_new_vendor_customers
 from data_commands.db_schema import VendorCustomerToParentMap, RejectedVendorCustomerToParentMap
 import pandas as pd
 from column_configs import SUGGESTED_VENDOR_SIBLINGS_CFG
+from data_arrangers.vendor_siblings import prepare_vendor_siblings_df
 
 ctx = get_app_context(APP_PATHS)
 
@@ -85,13 +86,9 @@ with review_queue:
             st.session_state.suggested_vendor_siblings_version = 0
 
         if "suggested_vendor_siblings_df" not in st.session_state:
-            _suggested_vendor_siblings_df = get_data(
-                ctx.db_conn, "suggested_vendor_siblings"
+            st.session_state.suggested_vendor_siblings_df = prepare_vendor_siblings_df(
+                get_data(ctx.db_conn, "suggested_vendor_siblings")
             )
-            
-            _suggested_vendor_siblings_df.insert(0, 'decision', None)
-
-            st.session_state.suggested_vendor_siblings_df = _suggested_vendor_siblings_df
 
         if "selected_siblings_ids_df" not in st.session_state:
             st.session_state.selected_siblings_ids_df = pd.DataFrame(

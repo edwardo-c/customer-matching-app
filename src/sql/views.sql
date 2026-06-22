@@ -35,7 +35,7 @@ SELECT
   siblings.billing_state AS right_billing_state,
   siblings.first3_token AS right_first3_token,
   
-  p.parent_account_id,
+  p.parent_account_id AS right_parent_account_id,
   
   'token_zip' AS "match_type"
 
@@ -75,7 +75,7 @@ SELECT
   siblings.billing_state AS right_billing_state,
   siblings.first3_token AS right_first3_token,
 
-  p.parent_account_id,
+  p.parent_account_id AS right_parent_account_id,
   
   'token_only' AS "match_type"
 FROM parentless ps
