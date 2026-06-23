@@ -96,4 +96,10 @@ CREATE TABLE vendor_customer_sibling_mismatch_map (
   PRIMARY KEY (left_vendor_customer_id, right_vendor_customer_id)
 );
 
-
+CREATE SEQUENCE vendor_siblings_seq START 1;
+CREATE TABLE vendor_siblings (
+  relationship_id INTEGER DEFAULT nextval('vendor_siblings_seq'),
+  left_vendor_customer_id INTEGER REFERENCES vendor_customers(vendor_customer_id),
+  right_vendor_customer_id INTEGER REFERENCES vendor_customers(vendor_customer_id),
+  PRIMARY KEY (left_vendor_customer_id, right_vendor_customer_id)
+);

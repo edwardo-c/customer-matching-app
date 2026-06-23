@@ -1,202 +1,169 @@
-CREATE OR REPLACE VIEW suggested_vendor_siblings AS (
-WITH parentless AS (
+-- A is a sibling of B, therefore B is a sibling of A --
+CREATE OR REPLACE VIEW normalized_siblings AS (
 SELECT
-  v.vendor_customer_id,
-  v.vendor_name,
-  v.raw_vendor_customer_name,
-  v.normalized_vendor_customer_name,
-  v.raw_billing_zip,
-  v.normalized_billing_zip,
-  v.billing_state,
-  v.period_date,
-  v.first3_token
-FROM vendor_customers v
-WHERE NOT EXISTS (
-  SELECT 1 
-  FROM vendor_customer_to_parent_account_map accepted
-  WHERE v.vendor_customer_id = accepted.vendor_customer_id
-  )
-), 
-potential_siblings_token_and_zip AS (
-SELECT
-  ps.vendor_customer_id AS left_vendor_customer_id,
-  ps.vendor_name AS left_vendor_name,
-  ps.raw_vendor_customer_name AS left_raw_vendor_customer_name,
-  ps.normalized_vendor_customer_name AS left_normalized_vendor_customer_name,
-  ps.normalized_billing_zip AS left_normalized_billing_zip,
-  ps.billing_state AS left_billing_state,
-  ps.first3_token AS left_first3_token,
-  
-  siblings.vendor_customer_id AS right_vendor_customer_id,
-  siblings.vendor_name AS right_vendor_name,
-  siblings.raw_vendor_customer_name AS right_raw_vendor_customer_name,
-  siblings.normalized_vendor_customer_name AS right_normalized_vendor_customer_name,
-  siblings.normalized_billing_zip AS right_normalized_billing_zip,
-  siblings.billing_state AS right_billing_state,
-  siblings.first3_token AS right_first3_token,
-  
-  p.parent_account_id AS right_parent_account_id,
-  
-  'token_zip' AS "match_type"
-
-FROM parentless ps
-
-JOIN vendor_customers siblings ON
-  ps.first3_token = siblings.first3_token
-  AND ps.normalized_billing_zip = siblings.normalized_billing_zip
-
-LEFT JOIN vendor_customer_to_parent_account_map _p ON
-  siblings.vendor_customer_id = _p.vendor_customer_id
-
-LEFT JOIN parent_accounts p ON
-  _p.parent_account_id = p.parent_account_id
-
-
-WHERE 
-  ps.vendor_customer_id <> siblings.vendor_customer_id
-
-), 
-
-potential_siblings_token_only AS (
-SELECT
-  ps.vendor_customer_id AS left_vendor_customer_id,
-  ps.vendor_name AS left_vendor_name,
-  ps.raw_vendor_customer_name AS left_raw_vendor_customer_name,
-  ps.normalized_vendor_customer_name AS left_normalized_vendor_customer_name,
-  ps.normalized_billing_zip AS left_normalized_billing_zip,
-  ps.billing_state AS left_billing_state,
-  ps.first3_token AS left_first3_token,
-
-  siblings.vendor_customer_id AS right_vendor_customer_id,
-  siblings.vendor_name AS right_vendor_name,
-  siblings.raw_vendor_customer_name AS right_raw_vendor_customer_name,
-  siblings.normalized_vendor_customer_name AS right_normalized_vendor_customer_name,
-  siblings.normalized_billing_zip AS right_normalized_billing_zip,
-  siblings.billing_state AS right_billing_state,
-  siblings.first3_token AS right_first3_token,
-
-  p.parent_account_id AS right_parent_account_id,
-  
-  'token_only' AS "match_type"
-FROM parentless ps
-
-JOIN vendor_customers siblings ON
-  ps.first3_token = siblings.first3_token
-
-LEFT JOIN vendor_customer_to_parent_account_map _p ON
-  siblings.vendor_customer_id = _p.vendor_customer_id
-
-LEFT JOIN parent_accounts p ON
-  _p.parent_account_id = p.parent_account_id
-
-WHERE 
-  ps.vendor_customer_id <> siblings.vendor_customer_id
-  AND NOT EXISTS (
-    SELECT 1 
-    FROM potential_siblings_token_and_zip matched
-    WHERE ps.vendor_customer_id = matched.left_vendor_customer_id
-    AND siblings.vendor_customer_id = matched.right_vendor_customer_id
-  )
-), 
-
-unioned AS (
-SELECT * FROM potential_siblings_token_and_zip
+  left_vendor_customer_id,
+  right_vendor_customer_id,
+  'direct' AS sibling_source
+FROM vendor_siblings
 
 UNION
 
-SELECT * FROM potential_siblings_token_only
+SELECT
+  right_vendor_customer_id AS left_vendor_customer_id,
+  left_vendor_customer_id AS right_vendor_customer_id,
+  'reversed' AS sibling_source
+FROM vendor_siblings
+); 
 
-)
-SELECT * FROM unioned
-ORDER BY match_type DESC, left_vendor_customer_id ASC 
+-- A is a sibling of B, B rejected parent C, A has not rejected C
+-- view suggests A may reject C 
+CREATE OR REPLACE VIEW inferred_parent_rejections AS (
+SELECT
+  base.left_vendor_customer_id AS vendor_customer_id,
+  base.right_vendor_customer_id AS source_vendor_customer_id,
+  rejected.parent_account_id AS parent_account_id
+FROM normalized_siblings base
+JOIN mismatch_vendor_customer_to_parent_account_map rejected ON
+  base.right_vendor_customer_id = rejected.vendor_customer_id
 );
 
+-- ============================================================================
+-- ================= VENDOR CUSTOMER TO PARENT SUGGESTIONS ====================
+-- ============================================================================
 
-
-
-
-
-CREATE OR REPLACE VIEW vendor_customer_to_parent_suggestions AS (
-WITH parentless AS (
+-- A is a sibling of B, A does not have a parent, B has parent C, 
+-- view suggests 'A is a child of C'
+CREATE OR REPLACE VIEW vendor_customer_sibling_parent_inferred AS (
 SELECT
-  v.vendor_customer_id,
-  v.vendor_name,
-  v.raw_vendor_customer_name,
-  v.normalized_vendor_customer_name,
-  v.raw_billing_zip,
-  v.normalized_billing_zip,
-  v.billing_state,
-  v.period_date,
-  v.first3_token
-FROM vendor_customers v
-WHERE NOT EXISTS (
-  SELECT 1 
-  FROM vendor_customer_to_parent_account_map accepted
-  WHERE v.vendor_customer_id = accepted.vendor_customer_id
+  left_vendor_customer_id AS vendor_customer_id,
+  right_parent.parent_account_id AS parent_account_id,
+  'sibling_parent_inferred' AS suggestion_type
+FROM normalized_siblings base
+
+JOIN vendor_customer_to_parent_account_map right_parent ON
+  base.right_vendor_customer_id = right_parent.vendor_customer_id
+
+WHERE 
+  NOT EXISTS (
+    SELECT 1
+    FROM vendor_customer_to_parent_account_map accepted_parents
+    WHERE base.left_vendor_customer_id = accepted_parents.vendor_customer_id 
   )
-), potential_parent AS (
+);
+
+-- A has no parent, A has a token and zip that match B, B has a parent C
+-- suggest A is a child C 
+CREATE OR REPLACE VIEW vendor_customer_token_zip_parent_inferred AS (
 SELECT
-  pl.vendor_customer_id,
-  pl.vendor_name,
-  pl.raw_vendor_customer_name,
-  pl.normalized_vendor_customer_name,
-  pl.raw_billing_zip,
-  pl.normalized_billing_zip,
-  pl.billing_state,
-  pl.period_date,
-  pl.first3_token,
-  p.parent_account_id,
-  p.parent_account_name,
-  p.normalized_parent_name
-FROM parentless pl
-JOIN parent_accounts p ON
-  pl.first3_token = p.first3_token
-), not_rejected AS (
-SELECT
-  pp.vendor_customer_id,
-  pp.vendor_name,
-  pp.raw_vendor_customer_name,
-  pp.normalized_vendor_customer_name,
-  pp.raw_billing_zip,
-  pp.normalized_billing_zip,
-  pp.billing_state,
-  pp.period_date,
-  pp.first3_token,
-  pp.parent_account_id,
-  pp.parent_account_name,
-  pp.normalized_parent_name
-FROM potential_parent pp
-WHERE NOT EXISTS (
-  SELECT 1 
-  FROM mismatch_vendor_customer_to_parent_account_map rejected
-  WHERE pp.vendor_customer_id = rejected.vendor_customer_id
-  AND pp.parent_account_id = rejected.parent_account_id
+  base.vendor_customer_id AS vendor_customer_id,
+  right_parent.parent_account_id AS parent_account_id,
+  'token_zip_parent_inferred' AS suggestion_type
+FROM vendor_customers base
+
+JOIN vendor_customers right_vc ON
+  base.first3_token = right_vc.first3_token
+  AND base.normalized_billing_zip = right_vc.normalized_billing_zip
+
+JOIN vendor_customer_to_parent_account_map right_parent ON
+  right_vc.vendor_customer_id = right_parent.vendor_customer_id 
+
+WHERE 
+  NOT EXISTS (
+    SELECT 1 
+    FROM vendor_customer_to_parent_account_map accepted
+    WHERE base.vendor_customer_id = accepted.vendor_customer_id
   )
-ORDER BY pp.vendor_customer_id ASC
-) 
+
+  AND base.vendor_customer_id <> right_vc.vendor_customer_id
+);
+
+-- A has no parent, A has a token that matches B, B has a parent C
+-- suggest A is a child C 
+CREATE OR REPLACE VIEW vendor_customer_token_parent_inferred AS (
+SELECT
+  base.vendor_customer_id AS vendor_customer_id,
+  right_parent.parent_account_id AS parent_account_id,
+  'token_parent_inferred' AS suggestion_type
+FROM vendor_customers base
+
+JOIN vendor_customers right_vc ON
+  base.first3_token = right_vc.first3_token
+
+JOIN vendor_customer_to_parent_account_map right_parent ON
+  right_vc.vendor_customer_id = right_parent.vendor_customer_id 
+
+WHERE 
+  NOT EXISTS (
+    SELECT 1 
+    FROM vendor_customer_to_parent_account_map accepted
+    WHERE base.vendor_customer_id = accepted.vendor_customer_id
+  )
+
+  AND base.vendor_customer_id <> right_vc.vendor_customer_id
+);
+
+-- A has no parent, A has a zip that matches B, B has a parent C
+-- suggest A is a child C 
+CREATE OR REPLACE VIEW vendor_customer_zip_parent_inferred AS (
+SELECT
+  base.vendor_customer_id AS vendor_customer_id,
+  right_parent.parent_account_id AS parent_account_id,
+  'zip_parent_inferred' AS suggestion_type
+FROM vendor_customers base
+
+JOIN vendor_customers right_vc ON
+  base.normalized_billing_zip = right_vc.normalized_billing_zip
+
+JOIN vendor_customer_to_parent_account_map right_parent ON
+  right_vc.vendor_customer_id = right_parent.vendor_customer_id 
+
+WHERE 
+  NOT EXISTS (
+    SELECT 1 
+    FROM vendor_customer_to_parent_account_map accepted
+    WHERE base.vendor_customer_id = accepted.vendor_customer_id
+  )
+
+  AND base.vendor_customer_id <> right_vc.vendor_customer_id
+);
+
+-- inferred and actual rejections for simplified exlusion of all
+CREATE OR REPLACE VIEW effective_rejections AS (
 SELECT 
-  * 
-FROM not_rejected
+  vendor_customer_id,
+  parent_account_id
+FROM inferred_parent_rejections
+
+UNION
+
+SELECT 
+  vendor_customer_id,
+  parent_account_id
+FROM mismatch_vendor_customer_to_parent_account_map
+
 );
 
-CREATE OR REPLACE VIEW vendor_customers_vw AS (
-SELECT
-  v.vendor_customer_id,
-  v.vendor_name,
-  v.raw_vendor_customer_name,
-  v.normalized_vendor_customer_name,
-  v.raw_billing_zip,
-  v.normalized_billing_zip,
-  v.billing_state,
-  v.period_date,
-  v.first3_token,
-  p.parent_account_id,
-  p.parent_account_name
-FROM vendor_customers v
-LEFT JOIN vendor_customer_to_parent_account_map _p ON
-  v.vendor_customer_id = _p.vendor_customer_id
-
-LEFT JOIN parent_accounts p ON
-  _p.parent_account_id = p.parent_account_id
-
+-- all suggestions not yet rejected
+CREATE OR REPLACE VIEW vendor_customer_to_parent_suggestions AS (
+WITH stacked AS (
+SELECT * FROM vendor_customer_sibling_parent_inferred
+UNION
+SELECT * FROM vendor_customer_token_zip_parent_inferred
+UNION
+SELECT * FROM vendor_customer_token_parent_inferred
+UNION
+SELECT * FROM vendor_customer_zip_parent_inferred
 )
+SELECT
+  vendor_customer_id,
+  parent_account_id,
+  suggestion_type
+FROM stacked base
+WHERE 
+  NOT EXISTS (
+    SELECT 1
+    FROM effective_rejections rejected
+    WHERE base.vendor_customer_id = rejected.vendor_customer_id
+    AND base.parent_account_id = rejected.parent_account_id
+  )
+);
