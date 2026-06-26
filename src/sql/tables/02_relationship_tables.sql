@@ -44,7 +44,7 @@ CREATE TABLE rejected_vendor_customer_to_erp_account_map (
 );
 
 CREATE SEQUENCE accepted_vendor_customer_sibling_seq START 1;
-CREATE TABLE accepted_vendor_siblings_map (
+CREATE TABLE accepted_vendor_customer_sibling_map (
   relationship_id INTEGER DEFAULT nextval('accepted_vendor_customer_sibling_seq'),
   left_vendor_customer_id INTEGER REFERENCES vendor_customers(vendor_customer_id),
   right_vendor_customer_id INTEGER REFERENCES vendor_customers(vendor_customer_id),

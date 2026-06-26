@@ -12,6 +12,7 @@ APP_PATHS = AppPaths(
     sql_views_files = [
         '01_base_views.sql',
         '02_vendor_customer_pair_views.sql',
+        '03_vendor_customer_to_erp_account_views.sql'
         '04_parent_suggestion_views.sql',
         '05_unresolved_groups.sql',
     ],

@@ -17,7 +17,7 @@ WHERE NOT EXISTS (
 );
 
 -- vendor customers not connected to an erp account
-CREATE OR REPLACE VIEW erp_less_vendor_customers AS (
+CREATE OR REPLACE VIEW erpless_vendor_customers AS (
 SELECT
   base.vendor_customer_id,
   base.normalized_billing_zip,
@@ -29,6 +29,26 @@ WHERE NOT EXISTS (
   WHERE base.vendor_customer_id = accepted.vendor_customer_id 
   )
 );
+
+-- A is a sibling of B, therefore B is a sibling of A
+CREATE OR REPLACE VIEW accepted_normalized_vendor_customer_sibling_map AS (
+SELECT
+  left_vendor_customer_id,
+  right_vendor_customer_id,
+  'direct' AS sibling_source
+FROM accepted_vendor_customer_sibling_map
+
+UNION
+
+SELECT
+  right_vendor_customer_id AS left_vendor_customer_id,
+  left_vendor_customer_id AS right_vendor_customer_id,
+  'reversed' AS sibling_source
+FROM accepted_vendor_customer_sibling_map
+); 
+
+-- ================ NOT USED YET ================
+
 
 -- erp accounts not connected to a parent account
 CREATE OR REPLACE VIEW parentless_erp_accounts AS (

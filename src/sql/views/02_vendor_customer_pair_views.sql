@@ -1,26 +1,6 @@
--- =================================================
--- ======= relationship/candidate-pair layer. ======
--- =================================================
-
-
--- vendor customers ===============================
--- A is a sibling of B, therefore B is a sibling of A
-CREATE OR REPLACE VIEW accepted_normalized_vendor_customer_sibling_map AS (
-SELECT
-  left_vendor_customer_id,
-  right_vendor_customer_id,
-  'direct' AS sibling_source
-FROM accepted_vendor_siblings_map
-
-UNION
-
-SELECT
-  right_vendor_customer_id AS left_vendor_customer_id,
-  left_vendor_customer_id AS right_vendor_customer_id,
-  'reversed' AS sibling_source
-FROM accepted_vendor_siblings_map
-); 
-
+-- =====================================================================
+-- ======= relationship/candidate-pair layer for vendor customers ======
+-- =====================================================================
 -- A rejected B, therefore B rejected A
 CREATE OR REPLACE VIEW rejected_normalized_vendor_customer_sibling_map AS (
 SELECT
@@ -130,7 +110,7 @@ JOIN vendor_customers right_vc ON
   base.first3_token = right_vc.first3_token
 );
 
--- similar token/zip, token, and zip
+-- similar token/zip, token, and zip, and sibling inferred candidates
 CREATE OR REPLACE VIEW vendor_customer_candidate_sibling_map AS (
 WITH stacked AS (
 SELECT * FROM vendor_customer_sibling_inferred_candidate_map
@@ -193,5 +173,3 @@ FROM ranked
 WHERE rn = 1
 );
 
--- erp accounts ===============================
--- 

@@ -1,7 +1,7 @@
 import streamlit as st
 
 from config import (APP_PATHS, VENDOR_CUSTOMERS_CFG)
-from data_commands.context import get_app_context
+from context import get_app_context
 from data_commands.commands import get_data, bulk_insert_target_table, resolve_accepted_sibling_pair, add_parent
 from refresh.vendor_customers import import_new_vendor_customers
 from data_commands.db_schema import VendorCustomerToParentMap, RejectedVendorCustomerToParentMap
