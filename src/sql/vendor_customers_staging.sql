@@ -1,8 +1,7 @@
 WITH base AS (
 SELECT DISTINCT ON (
     vendor_name, 
-    raw_vendor_customer_name,
-    normalized_billing_zip
+    raw_vendor_customer_name
   )
   vendor_name,
   raw_vendor_customer_name,

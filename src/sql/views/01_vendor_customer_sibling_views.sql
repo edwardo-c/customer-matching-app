@@ -8,7 +8,8 @@ CREATE OR REPLACE VIEW normalized_vendor_customer_sibling_map AS (
 SELECT
   left_vendor_customer_id,
   right_vendor_customer_id,
-  'direct' AS sibling_source
+  'direct' AS sibling_source,
+  NULL AS source
 FROM accepted_vendor_customer_sibling_map
 
 UNION
@@ -16,7 +17,8 @@ UNION
 SELECT
   right_vendor_customer_id AS left_vendor_customer_id,
   left_vendor_customer_id AS right_vendor_customer_id,
-  'reversed' AS sibling_source
+  'reversed' AS sibling_source,
+  NULL AS source
 FROM accepted_vendor_customer_sibling_map
 ); 
 
@@ -26,7 +28,7 @@ SELECT
   left_vendor_customer_id,
   right_vendor_customer_id,
   'direct' AS rejection_type,
-  NULL as source_vendor_customer_id
+  NULL AS source_vendor_customer_id
 FROM rejected_vendor_customer_sibling_map
 
 UNION
@@ -35,7 +37,7 @@ SELECT
   right_vendor_customer_id AS left_vendor_customer_id,
   left_vendor_customer_id AS right_vendor_customer_id,
   'reversed' AS rejection_type,
-  NULL as source_vendor_customer_id
+  NULL AS source_vendor_customer_id
 FROM rejected_vendor_customer_sibling_map
 );
 
@@ -75,9 +77,9 @@ SELECT
   source.right_vendor_customer_id AS right_vendor_customer_id,
   'sibling_inferred' AS sibling_source,
   base.right_vendor_customer_id AS source_vendor_customer_id
-FROM accepted_normalized_vendor_customer_sibling_map base
+FROM normalized_vendor_customer_sibling_map base
 
-JOIN accepted_normalized_vendor_customer_sibling_map source ON
+JOIN normalized_vendor_customer_sibling_map source ON
   base.right_vendor_customer_id = source.left_vendor_customer_id
 
 WHERE 

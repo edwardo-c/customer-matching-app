@@ -13,14 +13,14 @@ def construct_sql_paths(
     construct base_path/dir/file01, file02 ... paths
     raises on invalid path
     """
-    files = []
+    full_file_paths = []
     for f in files:
         p = Path(base_path / dir / f)
         if not p.exists():
             raise FileNotFoundError(f"path: {p} does not exist")
         else:
-            files.append[p]
-    return files
+            full_file_paths.append(p)
+    return full_file_paths
 
 def initialize_app_schema():
     if APP_PATHS.db_path.exists(): os.remove(str(APP_PATHS.db_path))
@@ -28,13 +28,13 @@ def initialize_app_schema():
     conn = duckdb.connect(APP_PATHS.db_path)
 
     tables_paths = construct_sql_paths(
-        base_path=APP_PATHS.db_path, 
+        base_path=APP_PATHS.sql_base_path, 
         files=APP_PATHS.sql_table_files, 
         dir='tables'
     )
 
     view_paths = construct_sql_paths(
-        base_path=APP_PATHS.db_path, 
+        base_path=APP_PATHS.sql_base_path, 
         files=APP_PATHS.sql_views_files, 
         dir='views'
     )

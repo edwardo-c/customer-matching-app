@@ -115,8 +115,7 @@ SELECT
   left_vendor_customer_id,
   right_vendor_customer_id,
   suggestion_type,
-  priority,
-  source_vendor_customer_id
+  priority
 FROM ranked 
 WHERE rn = 1
 );

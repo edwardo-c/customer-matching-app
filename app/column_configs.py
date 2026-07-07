@@ -1,73 +1,57 @@
 import streamlit as st
 
-SUGGESTED_VENDOR_SIBLINGS_CFG = {
-  'decision': st.column_config.SelectboxColumn(
+VENDOR_CUSTOMER_SIBLING_CANDIDATES_CFG = {
+    'Decision': st.column_config.SelectboxColumn(
       "Decision",
       options=["accept", "reject"], 
       disabled=False,
       width=180
   ),
 
-  'left_vendor_name': st.column_config.TextColumn(
+    'left_vendor_customer_id' : None,
+
+    'left_vendor_name': st.column_config.TextColumn(
       "Distributor",
       disabled=True
-  ),
+    ),
 
-  'left_raw_vendor_customer_name': st.column_config.TextColumn(
-      "Raw Customer Name",
+    'left_raw_vendor_customer_name': st.column_config.TextColumn(
+      "Customer Name",
       disabled=True
-  ),
+    ),
 
-  'left_normalized_billing_zip': st.column_config.TextColumn(
-      "Normalized Billing Zip",
+    'left_billing_state': st.column_config.TextColumn(
+      "Billing State",
       disabled=True
-  ),
+    ),
 
-  'left_billing_state': st.column_config.TextColumn(
-      "Raw Billing State",
+    'left_normalized_billing_zip': st.column_config.TextColumn(
+      "Billing Zip",
       disabled=True
-  ),
+    ),
 
-  'right_vendor_name': st.column_config.TextColumn(
-      "Potential Sibling - Distributor",
+    # RIGHT =====================
+    'right_vendor_customer_id': None,
+
+    'right_vendor_name': st.column_config.TextColumn(
+      "Sibling Candidate - Distributor",
       disabled=True
-  ),
+    ),
 
-  'right_raw_vendor_customer_name': st.column_config.TextColumn(
-      "Potential Sibling - Raw Customer Name",
+    'right_raw_vendor_customer_name': st.column_config.TextColumn(
+      "Sibling Candidate - Customer Name",
       disabled=True
-  ),
+    ),
 
-  'right_normalized_billing_zip': st.column_config.TextColumn(
-      "Potential Sibling - Normalized Billing Zip",
+    'right_billing_state': st.column_config.TextColumn(
+      "Sibling Candidate - Billing State",
       disabled=True
-  ),
+    ),
 
-  'right_billing_state': st.column_config.TextColumn(
-      "Potential Sibling - Raw Billing State",
+    'right_normalized_billing_zip': st.column_config.TextColumn(
+      "Sibling Candidate - Billing Zip",
       disabled=True
-  ),
+    ),
 
-  'match_type': st.column_config.TextColumn(
-      "Match Type",
-      disabled=True
-  ),
-
-  'left_vendor_customer_id' : st.column_config.NumberColumn(
-      "Customer ID",
-      disabled=True
-  ),
-
-  'right_vendor_customer_id': st.column_config.NumberColumn(
-      "Sibling ID",
-      disabled=True
-  ),
-
-  'right_normalized_vendor_customer_name': None, 
-  'left_normalized_vendor_customer_name': None,
-  'right_first3_token': None,
-  'right_raw_billing_zip': None,
-  'left_first3_token': None,
-  'left_raw_billing_zip': None,
-  
+    'priority': None
 }
