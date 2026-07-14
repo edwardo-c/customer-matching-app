@@ -10,7 +10,7 @@ SELECT
   right_vendor_customer_id,
   'direct' AS sibling_source,
   NULL AS source
-FROM accepted_vendor_customer_sibling_map
+FROM vendor_customer_sibling_map
 
 UNION
 
@@ -19,7 +19,7 @@ SELECT
   left_vendor_customer_id AS right_vendor_customer_id,
   'reversed' AS sibling_source,
   NULL AS source
-FROM accepted_vendor_customer_sibling_map
+FROM vendor_customer_sibling_map
 ); 
 
 -- A rejected B, therefore B rejected A
