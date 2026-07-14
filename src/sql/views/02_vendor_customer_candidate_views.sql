@@ -97,7 +97,7 @@ WHERE
     SELECT 1
     FROM normalized_vendor_customer_sibling_map accepted
     WHERE base.left_vendor_customer_id = accepted.left_vendor_customer_id
-      AND base.right_vendor_customer_id = accepted.right_vendor_customer_id
+    AND base.right_vendor_customer_id = accepted.right_vendor_customer_id
   )
 
 ), ranked AS (

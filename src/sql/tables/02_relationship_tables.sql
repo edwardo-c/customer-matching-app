@@ -18,6 +18,7 @@ CREATE TABLE vendor_customer_sibling_map (
   relationship_id INTEGER DEFAULT nextval('vendor_customer_sibling_seq'),
   left_vendor_customer_id INTEGER REFERENCES vendor_customers(vendor_customer_id),
   right_vendor_customer_id INTEGER REFERENCES vendor_customers(vendor_customer_id),
+  created_datetime TIMESTAMP,
   PRIMARY KEY (left_vendor_customer_id, right_vendor_customer_id)
 );
 
@@ -26,6 +27,7 @@ CREATE TABLE rejected_vendor_customer_sibling_map (
   relationship_id INTEGER DEFAULT nextval('rejected_vendor_customer_sibling_seq'),
   left_vendor_customer_id INTEGER REFERENCES vendor_customers(vendor_customer_id),
   right_vendor_customer_id INTEGER REFERENCES vendor_customers(vendor_customer_id),
+  created_datetime TIMESTAMP,
   PRIMARY KEY (left_vendor_customer_id, right_vendor_customer_id)
 );
 

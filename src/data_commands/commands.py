@@ -14,12 +14,32 @@ def add_parent(
     token = first3_token(norm_name)
     conn.execute(
         """
-        INSERT INTO parent_accounts (parent_account_name, normalized_parent_name, first3_token) 
+        INSERT INTO parent_accounts (
+          parent_account_name, 
+          normalized_parent_name, 
+          first3_token
+        ) 
         VALUES (?, ?, ?)
         """, 
         [name, norm_name, token]
     )
+
+def insert_into_sibling_relationship_table(
+        conn: duckdb.DuckDBPyConnection, 
+        *,
+        target_table: str,
+        staging_table_df: pd.DataFrame
+    ):
+    _df = staging_table_df.copy()
     
+    staging_table_df["created_datetime"] = pd.Timestamp.now()
+    
+    bulk_insert_target_table(
+        conn, 
+        target_table=target_table, 
+        staging_table_df=staging_table_df
+    )
+
 def bulk_insert_target_table(
         conn: duckdb.DuckDBPyConnection, 
         *,

@@ -8,7 +8,9 @@ VENDOR_CUSTOMER_SIBLING_CANDIDATES_CFG = {
       width=180
   ),
 
-    'left_vendor_customer_id' : None,
+    'left_vendor_customer_id' : st.column_config.NumberColumn(
+        label="left_vendor_customer_id"
+    ),
 
     'left_vendor_name': st.column_config.TextColumn(
       "Distributor",
@@ -31,7 +33,9 @@ VENDOR_CUSTOMER_SIBLING_CANDIDATES_CFG = {
     ),
 
     # RIGHT =====================
-    'right_vendor_customer_id': None,
+    'right_vendor_customer_id': st.column_config.NumberColumn(
+        label="right_vendor_customer_id"
+    ),
 
     'right_vendor_name': st.column_config.TextColumn(
       "Sibling Candidate - Distributor",

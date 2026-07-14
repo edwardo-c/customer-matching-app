@@ -2,7 +2,6 @@
 -- ======= relationship layer for vendor customers ======
 -- ======================================================
 
--- ================== ACCEPTED ===========================
 -- A is a sibling of B, therefore B is a sibling of A
 CREATE OR REPLACE VIEW normalized_vendor_customer_sibling_map AS (
 SELECT
